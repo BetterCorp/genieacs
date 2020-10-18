@@ -253,7 +253,7 @@ if (fsHostname) {
 // Defaults
 for (const [k, v] of Object.entries(options))
   if (v["default"] != null) setConfig(k, v["default"]);
-
+*/
 export function get(
   optionName: string,
   deviceId?: string
@@ -283,7 +283,7 @@ export function get(
   }
 
   return null;
-}*/
+}
 
 export function getDefault(optionName: string): string | number | boolean {
   const option = options[optionName];
