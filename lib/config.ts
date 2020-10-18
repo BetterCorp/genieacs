@@ -184,7 +184,7 @@ function setConfig(name, value, commandLineArgument = false): boolean {
 
   return false;
 }
-
+/*
 // Command line arguments
 const argv = process.argv.slice(2);
 while (argv.length) {
@@ -203,6 +203,7 @@ for (const [k, v] of Object.entries(process.env))
 const configFilename = configDir
   ? `${configDir}/config.json`
   : `${ROOT_DIR}/config/config.json`;
+
 
 if (existsSync(configFilename)) {
   const configFile = JSON.parse(readFileSync(configFilename).toString());
@@ -282,7 +283,7 @@ export function get(
   }
 
   return null;
-}
+}*/
 
 export function getDefault(optionName: string): string | number | boolean {
   const option = options[optionName];
@@ -292,4 +293,14 @@ export function getDefault(optionName: string): string | number | boolean {
   if (val && option.type === "path") val = resolve(val);
 
   return val;
+}
+
+//BetterCorp Config
+const configFilename = `${ROOT_DIR}/sec.config.json`;
+const configFile = JSON.parse(readFileSync(configFilename).toString()).plugins['plugin-tr069'].genieacs;
+
+for (const [k, v] of Object.entries(configFile)) {
+  if (!setConfig(k, v))
+    // Pass as environment variable to be accessable by extensions
+    process.env[`GENIEACS_${k}`] = `${v}`;
 }
