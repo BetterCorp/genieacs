@@ -1,10 +1,10 @@
 {
-  "name": "genieacs",
+  "name": "@bettercorp/genieacs",
   "version": "1.2.2",
   "description": "A TR-069 Auto Configuration Server (ACS)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/genieacs/genieacs.git"
+    "url": "git@github.com:BetterCorp/genieacs.git"
   },
   "homepage": "https://genieacs.com",
   "keywords": [
