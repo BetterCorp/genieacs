@@ -27,7 +27,7 @@ import * as query from "./query";
 import * as apiFunctions from "./api-functions";
 import { IncomingMessage, ServerResponse } from "http";
 import * as cache from "./cache";
-import { version as VERSION } from "../package.json";
+//import { version as VERSION } from "../package.json";
 import { ping } from "./ping";
 
 const DEVICE_TASKS_REGEX = /^\/devices\/([a-zA-Z0-9\-_%]+)\/tasks\/?$/;
@@ -57,7 +57,7 @@ export function listener(
 ): void {
   const chunks = [];
   let bytes = 0;
-  response.setHeader("GenieACS-Version", VERSION);
+  //response.setHeader("GenieACS-Version", VERSION);
 
   request.addListener("data", (chunk): void => {
     chunks.push(chunk);

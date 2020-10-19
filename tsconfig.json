@@ -1,24 +1,32 @@
 {
   "compilerOptions": {
-    "lib": [
-      "esnext", "dom"
-    ],
-    "module": "esnext",
-    "moduleResolution": "node",
-    "target": "esnext",
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "alwaysStrict": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": [ "types/*" ]
+    },
+    "module": "commonjs",
     "noImplicitReturns": true,
-    "strictFunctionTypes": true,
-    "allowJs": true
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "sourceMap": true,
+    "strict": false,
+    "target": "es2016",
+    "declaration": true,
+    "skipLibCheck": true
   },
+  "linterOptions": {
+    "exclude": [
+      "src/plugins/-*/*.*",
+      "node_modules/**"
+    ]
+  },
+  "compileOnSave": true,
   "include": [
-      "./bin/*.ts",
-      "./lib/**/*",
-      "./ui/**/*",
-      "./test/**/*",
-      "./build/**/*",
-      "./tools/*.ts"
+    "src"
+  ],
+  "exclude": [
+    "node_modules/**",
+    "node_modules"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@bettercorp/genieacs",
-  "version": "1.2.2-2",
+  "version": "1.2.2-5",
   "description": "A TR-069 Auto Configuration Server (ACS)",
   "repository": {
     "type": "git",
@@ -12,13 +12,11 @@
     "CWMP",
     "ACS"
   ],
+  "files": [
+    "lib/**/*"
+  ],
   "author": "Zaid Abdulla <zaid@genieacs.com>",
   "license": "AGPL-3.0",
-  "preferGlobal": true,
-  "directories": {
-    "bin": "bin",
-    "tools": "tools"
-  },
   "dependencies": {
     "espresso-iisojs": "^1.0.3",
     "iconv-lite": "^0.6.2",
@@ -82,6 +80,7 @@
     "lint-prettier": "prettier --parser typescript --write \"bin/**/*.ts\" \"lib/**/*.ts\" \"ui/**/*.ts\" \"test/**/*.ts\" \"build/**/*.ts\" \"tools/**/*.ts\"",
     "lint-tsc": "tsc --noEmit",
     "lint": "npm run lint-eslint && npm run lint-prettier && npm run lint-tsc",
-    "build": "node -r esm -r ts-node/register/transpile-only build/build"
+    "build": "node -r esm -r ts-node/register/transpile-only build/build",
+    "build-tsc": "tsc"
   }
 }

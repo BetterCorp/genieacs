@@ -4,3 +4,4 @@ dist
 bin/.*.ts
 tools/.*.ts
 docs/_build
+lib/

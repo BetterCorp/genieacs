@@ -17,7 +17,7 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import parsimmon from "parsimmon";
+import * as parsimmon from "parsimmon";
 import { Expression } from "../types";
 
 // Turn escaped characters into real ones (e.g. "\\n" becomes "\n").
@@ -264,7 +264,7 @@ const lang = parsimmon.createLanguage({
             .notFollowedBy(parsimmon.regexp(/[a-zA-Z0-9_]/))
         )
         .skip(parsimmon.optWhitespace),
-      (...arr) => arr.flat(2)
+      (...arr) => (arr as any).flat(2)
     );
   },
   Value: function (r) {

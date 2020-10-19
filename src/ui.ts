@@ -18,13 +18,13 @@
  */
 
 import { Z_SYNC_FLUSH } from "zlib";
-import Koa from "koa";
-import Router from "koa-router";
+import * as Koa from "koa";
+import * as Router from "koa-router";
 import * as jwt from "jsonwebtoken";
-import koaStatic from "koa-static";
-import koaCompress from "koa-compress";
+import * as koaStatic from "koa-static";
+import * as koaCompress from "koa-compress";
 import koaBodyParser from "koa-bodyparser";
-import koaJwt from "koa-jwt";
+import * as koaJwt from "koa-jwt";
 import * as config from "./config";
 import api from "./ui/api";
 import Authorizer from "./common/authorizer";
@@ -33,7 +33,7 @@ import * as localCache from "./local-cache";
 import { PermissionSet } from "./types";
 import { authLocal } from "./ui/api-functions";
 import * as init from "./init";
-import { version as VERSION } from "../package.json";
+//import { version as VERSION } from "../package.json";
 import memoize from "./common/memoize";
 
 declare module "koa" {
@@ -69,7 +69,7 @@ koa.use(async (ctx, next) => {
   const configSnapshot = await localCache.getCurrentSnapshot();
   ctx.state.configSnapshot = configSnapshot;
   ctx.set("X-Config-Snapshot", configSnapshot);
-  ctx.set("GenieACS-Version", VERSION);
+  //ctx.set("GenieACS-Version", VERSION);
   return next();
 });
 
@@ -239,7 +239,7 @@ router.get("/", async (ctx) => {
           ui: localCache.getUiConfig(ctx.state.configSnapshot),
         })};
         window.configSnapshot = ${JSON.stringify(ctx.state.configSnapshot)};
-        window.genieacsVersion = ${JSON.stringify(VERSION)};
+        `+/*window.genieacsVersion = ${JSON.stringify(VERSION)};*/`
         window.username = ${JSON.stringify(
           ctx.state.user ? ctx.state.user.username : ""
         )};

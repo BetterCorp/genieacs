@@ -42,7 +42,7 @@ class Indeterminates {
     }
   }
 
-  public reciprocal(): Indeterminates {
+  public reciprocal (): Indeterminates {
     const res = new Indeterminates();
     res.sortedKeys = this.sortedKeys;
     res.map = new Map();
@@ -50,7 +50,7 @@ class Indeterminates {
     return res;
   }
 
-  public static multiply(
+  public static multiply (
     indeterminates1: Indeterminates,
     indeterminates2: Indeterminates
   ): Indeterminates {
@@ -84,7 +84,7 @@ class Indeterminates {
     return res;
   }
 
-  public static compare(a: Indeterminates, b: Indeterminates): number {
+  public static compare (a: Indeterminates, b: Indeterminates): number {
     if (a.sortedKeys.length !== b.sortedKeys.length)
       return b.sortedKeys.length - a.sortedKeys.length;
     for (let i = 0; i < a.sortedKeys.length; ++i) {
@@ -108,7 +108,7 @@ interface Term {
   coefficientDenominator: BI.bigint;
 }
 
-function findGcd(a: BI.bigint, b: BI.bigint): BI.bigint {
+function findGcd (a: BI.bigint, b: BI.bigint): BI.bigint {
   while (BI.ne(b, ZERO)) {
     const t = b;
     b = BI.rem(a, b);
@@ -124,7 +124,7 @@ class Polynomial {
     this.terms = terms;
   }
 
-  public static simplifyTerms(terms: Term[]): Term[] {
+  public static simplifyTerms (terms: Term[]): Term[] {
     const ts = terms
       .slice()
       .sort((a: Term, b: Term) =>
@@ -162,7 +162,7 @@ class Polynomial {
     return ts.filter((v) => BI.ne(v.coefficientNumerator, ZERO));
   }
 
-  public static fromIndeterminate(indeterminate: Expression): Polynomial {
+  public static fromIndeterminate (indeterminate: Expression): Polynomial {
     const indeterminates = new Indeterminates(JSON.stringify(indeterminate));
     const terms = [
       {
@@ -174,7 +174,7 @@ class Polynomial {
     return new Polynomial(terms);
   }
 
-  public static fromConstant(constant: number): Polynomial {
+  public static fromConstant (constant: number): Polynomial {
     const [int, frac] = Math.abs(constant).toString(2).split(".", 2);
     let numerator = BI.BigInt("0b" + int);
     if (constant < 0) numerator = BI.mul(numerator, NEGATIVE_ONE);
@@ -198,7 +198,7 @@ class Polynomial {
     return new Polynomial(terms);
   }
 
-  public negation(): Polynomial {
+  public negation (): Polynomial {
     const terms = this.terms.map((t) => ({
       indeterminates: t.indeterminates,
       coefficientNumerator: BI.mul(t.coefficientNumerator, NEGATIVE_ONE),
@@ -208,7 +208,7 @@ class Polynomial {
     return new Polynomial(terms);
   }
 
-  public reciprocal(): Polynomial {
+  public reciprocal (): Polynomial {
     const terms = this.terms.map((t) => ({
       indeterminates: t.indeterminates.reciprocal(),
       coefficientNumerator: t.coefficientDenominator,
@@ -217,22 +217,22 @@ class Polynomial {
     return new Polynomial(terms);
   }
 
-  public constant(): Polynomial {
+  public constant (): Polynomial {
     const terms = this.terms.filter((t) => !t.indeterminates.sortedKeys.length);
     return new Polynomial(terms);
   }
 
-  public add(rhs: Polynomial): Polynomial {
+  public add (rhs: Polynomial): Polynomial {
     return new Polynomial(
       Polynomial.simplifyTerms(this.terms.concat(rhs.terms))
     );
   }
 
-  public subtract(rhs: Polynomial): Polynomial {
+  public subtract (rhs: Polynomial): Polynomial {
     return this.add(rhs.negation());
   }
 
-  public multiply(rhs: Polynomial): Polynomial {
+  public multiply (rhs: Polynomial): Polynomial {
     const terms: Term[] = [];
 
     for (const t1 of this.terms) {
@@ -261,11 +261,11 @@ class Polynomial {
     return new Polynomial(Polynomial.simplifyTerms(terms));
   }
 
-  public divide(rhs: Polynomial): Polynomial {
+  public divide (rhs: Polynomial): Polynomial {
     return this.multiply(rhs.reciprocal());
   }
 
-  public toString(): string {
+  public toString (): string {
     const add: string[] = [];
     for (const t of this.terms) {
       const coefficient =
@@ -301,43 +301,43 @@ type Minterm = number[];
 type Context = Map<string, number>;
 
 abstract class BoolExprSynth {
-  public abstract true(context: Context): Minterm[];
-  public abstract false(context: Context): Minterm[];
-  public abstract null(context: Context): Minterm[];
+  public abstract true (context: Context): Minterm[];
+  public abstract false (context: Context): Minterm[];
+  public abstract null (context: Context): Minterm[];
 }
 
 class TrueSynth extends BoolExprSynth {
-  public true(): Minterm[] {
+  public true (): Minterm[] {
     return [[]];
   }
-  public false(): Minterm[] {
+  public false (): Minterm[] {
     return [];
   }
-  public null(): Minterm[] {
+  public null (): Minterm[] {
     return [];
   }
 }
 
 class FalseSynth extends BoolExprSynth {
-  public true(): Minterm[] {
+  public true (): Minterm[] {
     return [];
   }
-  public false(): Minterm[] {
+  public false (): Minterm[] {
     return [[]];
   }
-  public null(): Minterm[] {
+  public null (): Minterm[] {
     return [];
   }
 }
 
 class NullSynth extends BoolExprSynth {
-  public true(): Minterm[] {
+  public true (): Minterm[] {
     return [];
   }
-  public false(): Minterm[] {
+  public false (): Minterm[] {
     return [];
   }
-  public null(): Minterm[] {
+  public null (): Minterm[] {
     return [[]];
   }
 }
@@ -366,17 +366,17 @@ class VarSynth extends BoolExprSynth {
     }
     this.expStr = JSON.stringify(exp);
   }
-  public true(context: Context): Minterm[] {
+  public true (context: Context): Minterm[] {
     let v = context.get(this.expStr);
     if (v == null) context.set(this.expStr, (v = context.size));
     return [[(v << 2) ^ (this.negate ? 1 : 3)]];
   }
-  public false(context: Context): Minterm[] {
+  public false (context: Context): Minterm[] {
     let v = context.get(this.expStr);
     if (v == null) context.set(this.expStr, (v = context.size));
     return [[(v << 2) ^ (this.negate ? 3 : 1)]];
   }
-  public null(context: Context): Minterm[] {
+  public null (context: Context): Minterm[] {
     let v = context.get(this.expStr);
     if (v == null) context.set(this.expStr, (v = context.size));
     return [[v << 2, (v << 2) ^ 2]];
@@ -389,13 +389,13 @@ class NotSynth extends BoolExprSynth {
     super();
     this.exprSynth = e;
   }
-  public true(context: Context): Minterm[] {
+  public true (context: Context): Minterm[] {
     return this.exprSynth.false(context);
   }
-  public false(context: Context): Minterm[] {
+  public false (context: Context): Minterm[] {
     return this.exprSynth.true(context);
   }
-  public null(context: Context): Minterm[] {
+  public null (context: Context): Minterm[] {
     return this.exprSynth.null(context);
   }
 }
@@ -406,13 +406,13 @@ class IsNullSynth extends BoolExprSynth {
     super();
     this.exprSynth = e;
   }
-  public true(context: Context): Minterm[] {
+  public true (context: Context): Minterm[] {
     return this.exprSynth.null(context);
   }
-  public false(context: Context): Minterm[] {
+  public false (context: Context): Minterm[] {
     return [...this.exprSynth.true(context), ...this.exprSynth.false(context)];
   }
-  public null(): Minterm[] {
+  public null (): Minterm[] {
     return [];
   }
 }
@@ -432,13 +432,13 @@ class OrSynth extends BoolExprSynth {
     });
     this.exprSynths.push(...unpacked);
   }
-  public true(context: Context): Minterm[] {
+  public true (context: Context): Minterm[] {
     if (this.exprSynths.length === 0) return [];
     if (this.exprSynths.length === 1) return this.exprSynths[0].true(context);
     if (this.exprSynths.some((e) => e instanceof TrueSynth)) return [[]];
-    return this.exprSynths.map((e) => e.true(context)).flat();
+    return (this.exprSynths.map((e) => e.true(context)) as any).flat();
   }
-  public false(context: Context): Minterm[] {
+  public false (context: Context): Minterm[] {
     if (this.exprSynths.length === 0) return [[]];
     if (this.exprSynths.length === 1) return this.exprSynths[0].false(context);
     if (
@@ -448,14 +448,14 @@ class OrSynth extends BoolExprSynth {
     )
       return [];
     return complement(
-      this.exprSynths.map((e) => complement(e.false(context))).flat()
+      (this.exprSynths.map((e) => complement(e.false(context))) as any).flat()
     );
   }
-  public null(context: Context): Minterm[] {
+  public null (context: Context): Minterm[] {
     if (this.exprSynths.length === 0) return [];
     if (this.exprSynths.length === 1) return this.exprSynths[0].null(context);
-    const n = this.exprSynths.map((e) => e.null(context)).flat();
-    const t = this.exprSynths.map((e) => e.true(context)).flat();
+    const n = (this.exprSynths.map((e) => e.null(context)) as any).flat();
+    const t = (this.exprSynths.map((e) => e.true(context)) as any).flat();
     return complement([...complement(n), ...t]);
   }
 }
@@ -475,7 +475,7 @@ class AndSynth extends BoolExprSynth {
     });
     this.exprSynths.push(...unpacked);
   }
-  public true(context: Context): Minterm[] {
+  public true (context: Context): Minterm[] {
     if (this.exprSynths.length === 0) return [[]];
     if (this.exprSynths.length === 1) return this.exprSynths[0].true(context);
     if (
@@ -485,20 +485,20 @@ class AndSynth extends BoolExprSynth {
     )
       return [];
     return complement(
-      this.exprSynths.map((e) => complement(e.true(context))).flat()
+      (this.exprSynths.map((e) => complement(e.true(context))) as any).flat()
     );
   }
-  public false(context: Context): Minterm[] {
+  public false (context: Context): Minterm[] {
     if (this.exprSynths.length === 0) return [];
     if (this.exprSynths.length === 1) return this.exprSynths[0].false(context);
     if (this.exprSynths.some((e) => e instanceof FalseSynth)) return [[]];
-    return this.exprSynths.map((e) => e.false(context)).flat();
+    return (this.exprSynths.map((e) => e.false(context)) as any).flat();
   }
-  public null(context: Context): Minterm[] {
+  public null (context: Context): Minterm[] {
     if (this.exprSynths.length === 0) return [];
     if (this.exprSynths.length === 1) return this.exprSynths[0].null(context);
-    const n = this.exprSynths.map((e) => e.null(context)).flat();
-    const f = this.exprSynths.map((e) => e.false(context)).flat();
+    const n = (this.exprSynths.map((e) => e.null(context)) as any).flat();
+    const f = (this.exprSynths.map((e) => e.false(context)) as any).flat();
     return complement([...complement(n), ...f]);
   }
 }
@@ -509,7 +509,7 @@ class CaseSynth extends BoolExprSynth {
     super();
     this.exprSynths = e;
   }
-  public true(context: Context): Minterm[] {
+  public true (context: Context): Minterm[] {
     const minterms: Minterm[] = [];
     const cumulative: Minterm[] = [];
     for (let i = 0; i < this.exprSynths.length; i += 2) {
@@ -529,7 +529,7 @@ class CaseSynth extends BoolExprSynth {
     }
     return minterms;
   }
-  public false(context: Context): Minterm[] {
+  public false (context: Context): Minterm[] {
     const minterms: Minterm[] = [];
     const cumulative: Minterm[] = [];
     for (let i = 0; i < this.exprSynths.length; i += 2) {
@@ -549,7 +549,7 @@ class CaseSynth extends BoolExprSynth {
     }
     return minterms;
   }
-  public null(context: Context): Minterm[] {
+  public null (context: Context): Minterm[] {
     const minterms: Minterm[] = [];
     const cumulative: Minterm[] = [];
     for (let i = 0; i < this.exprSynths.length; i += 2) {
@@ -582,7 +582,7 @@ const SWAPPED_OPS = {
   "<=": ">=",
 };
 
-function normalizeCallback(exp: Expression): Expression {
+function normalizeCallback (exp: Expression): Expression {
   if (!Array.isArray(exp)) return exp;
   const op = exp[0];
 
@@ -609,7 +609,7 @@ function normalizeCallback(exp: Expression): Expression {
       if (!Array.isArray(w) && w) break;
     }
     while (res[res.length - 1][1] == null) res.pop();
-    return ["CASE", ...res.flat()];
+    return ["CASE", ...(res as any).flat()];
   }
 
   const permutations: Map<number, [Expression, Expression][]> = new Map();
@@ -642,10 +642,10 @@ function normalizeCallback(exp: Expression): Expression {
     if (res[0][0] === true) return res[0][1];
     while (res[res.length - 1][1] == null) res.pop();
 
-    return ["CASE", ...res.flat()];
+    return ["CASE", ...(res as any).flat()];
   }
 
-  function toPolynomial(e: Expression): Polynomial {
+  function toPolynomial (e: Expression): Polynomial {
     if (e == null) return null;
     if (e instanceof Polynomial) return e;
     if (typeof e === "number") return Polynomial.fromConstant(e);
@@ -770,7 +770,7 @@ function normalizeCallback(exp: Expression): Expression {
   return exp;
 }
 
-export function normalize(expr: Expression): Expression {
+export function normalize (expr: Expression): Expression {
   expr = map(expr, normalizeCallback);
   if (expr instanceof Polynomial) {
     expr = JSON.parse(expr.toString());
@@ -782,7 +782,7 @@ export function normalize(expr: Expression): Expression {
   return expr;
 }
 
-function toBoolExprSynth(e: Expression | BoolExprSynth): BoolExprSynth {
+function toBoolExprSynth (e: Expression | BoolExprSynth): BoolExprSynth {
   if (e instanceof BoolExprSynth) return e;
   if (Array.isArray(e)) {
     if (e[0] === "CASE")
@@ -794,7 +794,7 @@ function toBoolExprSynth(e: Expression | BoolExprSynth): BoolExprSynth {
   return new FalseSynth();
 }
 
-function sopToExpression(
+function sopToExpression (
   sop: number[][],
   expressions: Map<number, Expression>
 ): Expression {
@@ -827,13 +827,13 @@ function sopToExpression(
   return res[0];
 }
 
-function generateDcSetAndIsNull(
+function generateDcSetAndIsNull (
   variables: Map<number, Expression>
-): { dcSet: number[][]; isNull: Map<number, number> } {
+): { dcSet: number[][]; isNull: Map<number, number>; } {
   // TODO support LIKE and NOT LIKE operators
   const relations: Map<
     string,
-    { op: string; rhs: boolean | number | string; var: number }[]
+    { op: string; rhs: boolean | number | string; var: number; }[]
   > = new Map();
 
   for (const [n, e] of variables) {
@@ -977,7 +977,7 @@ function generateDcSetAndIsNull(
   return { dcSet, isNull };
 }
 
-function sanitizeMinterms(
+function sanitizeMinterms (
   minterms: number[][],
   isNull: Map<number, number>
 ): number[][] {
@@ -1010,7 +1010,7 @@ function sanitizeMinterms(
   return res;
 }
 
-function boolExprSynthToExpression(boolExpr: BoolExprSynth): Expression {
+function boolExprSynthToExpression (boolExpr: BoolExprSynth): Expression {
   const context: Map<string, number> = new Map();
   let minterms = boolExpr.true(context);
   const variables = new Map(
@@ -1025,7 +1025,7 @@ function boolExprSynthToExpression(boolExpr: BoolExprSynth): Expression {
   return sopToExpression(minterms, variables);
 }
 
-function mapCallback(exp: Expression | BoolExprSynth): Expression {
+function mapCallback (exp: Expression | BoolExprSynth): Expression {
   if (!Array.isArray(exp)) return exp as Expression;
   if (exp[0] === "CASE") {
     exp = exp.slice();
@@ -1065,7 +1065,7 @@ function mapCallback(exp: Expression | BoolExprSynth): Expression {
   return exp;
 }
 
-function getCanRaiseCallback(
+function getCanRaiseCallback (
   isNull: Map<number, number>
 ): (idx: number, set: Set<number>) => boolean {
   return (idx: number, set: Set<number>): boolean => {
@@ -1088,7 +1088,7 @@ function getCanRaiseCallback(
   };
 }
 
-export function minimize(expr: Expression, boolean = false): Expression {
+export function minimize (expr: Expression, boolean = false): Expression {
   expr = normalize(expr);
   expr = map(expr, mapCallback);
   if (Array.isArray(expr) && expr[0] === "CASE") {
@@ -1125,7 +1125,7 @@ export function minimize(expr: Expression, boolean = false): Expression {
   return expr;
 }
 
-export function unionDiff(
+export function unionDiff (
   expr1: Expression,
   expr2: Expression
 ): [Expression, Expression] {
@@ -1179,7 +1179,7 @@ export function unionDiff(
   return [sopToExpression(union, variables), sopToExpression(diff, variables)];
 }
 
-export function covers(expr1: Expression, expr2: Expression): boolean {
+export function covers (expr1: Expression, expr2: Expression): boolean {
   expr2 = normalize(expr2);
   if (!expr2) return true;
   expr1 = normalize(expr1);

@@ -17,7 +17,7 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import cluster from "cluster";
+import * as cluster from "cluster";
 import { cpus } from "os";
 import * as logger from "./logger";
 

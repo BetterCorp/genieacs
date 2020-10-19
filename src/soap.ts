@@ -25,7 +25,7 @@ import {
   decodeEntities,
 } from "./xml-parser";
 import memoize from "./common/memoize";
-import { version as VERSION } from "../package.json";
+//import { version as VERSION } from "../package.json";
 import {
   InformRequest,
   FaultStruct,
@@ -51,7 +51,7 @@ import {
 } from "./types";
 import Path from "./common/path";
 
-const SERVER_NAME = `GenieACS/${VERSION}`;
+const SERVER_NAME = `GenieACS`;
 
 const NAMESPACES = {
   "1.0": {

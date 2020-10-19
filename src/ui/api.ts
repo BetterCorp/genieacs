@@ -18,7 +18,7 @@
  */
 
 import * as stream from "stream";
-import Router from "koa-router";
+import * as Router from "koa-router";
 import * as db from "./db";
 import * as apiFunctions from "./api-functions";
 import { evaluate, and, extractParams } from "../common/expression";

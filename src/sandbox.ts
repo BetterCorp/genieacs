@@ -18,7 +18,7 @@
  */
 
 import * as vm from "vm";
-import seedrandom from "seedrandom";
+import * as seedrandom from "seedrandom";
 import * as device from "./device";
 import * as extensions from "./extensions";
 import * as logger from "./logger";
