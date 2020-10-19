@@ -4,14 +4,15 @@
     "paths": {
       "*": [ "types/*" ]
     },
-    "module": "commonjs",
+    "target": "es2020",
+    "module": "es2020",
+    "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
     "rootDir": "src",
     "sourceMap": true,
     "strict": false,
-    "target": "es2016",
     "declaration": true,
     "skipLibCheck": true
   },
