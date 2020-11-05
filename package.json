@@ -1,6 +1,6 @@
 {
   "name": "@bettercorp/genieacs",
-  "version": "1.2.3",
+  "version": "1.2.3-1",
   "description": "A TR-069 Auto Configuration Server (ACS)",
   "repository": {
     "type": "git",
