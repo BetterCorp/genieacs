@@ -4,8 +4,8 @@
     "paths": {
       "*": [ "types/*" ]
     },
-    "target": "esnext",
-    "module": "ES2015",
+    "target": "es2017",
+    "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
