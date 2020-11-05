@@ -17,10 +17,10 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Path from "./common/path";
-import PathSet from "./common/path-set";
-import VersionedMap from "./versioned-map";
-import InstanceSet from "./instance-set";
+import Path from "./common/path.js";
+import PathSet from "./common/path-set.js";
+import VersionedMap from "./versioned-map.js";
+import InstanceSet from "./instance-set.js";
 import { IncomingMessage, ServerResponse } from "http";
 import { Script } from "vm";
 

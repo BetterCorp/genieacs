@@ -17,11 +17,11 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as BI from "./bigint";
+import * as BI from "./bigint.js";
 import { espresso, complement, tautology } from "espresso-iisojs";
-import { Expression } from "../types";
-import { map } from "./expression-parser";
-import { and, evaluateCallback } from "./expression";
+import { Expression } from "../types.js";
+import { map } from "./expression-parser.js";
+import { and, evaluateCallback } from "./expression.js";
 
 const ZERO = BI.BigInt(0);
 const ONE = BI.BigInt(1);

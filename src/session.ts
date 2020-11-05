@@ -17,15 +17,15 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as device from "./device";
-import * as sandbox from "./sandbox";
-import * as localCache from "./local-cache";
-import * as defaultProvisions from "./default-provisions";
-import { estimateGpnCount } from "./gpn-heuristic";
-import Path from "./common/path";
-import PathSet from "./common/path-set";
-import VersionedMap from "./versioned-map";
-import InstanceSet from "./instance-set";
+import * as device from "./device.js";
+import * as sandbox from "./sandbox.js";
+import * as localCache from "./local-cache.js";
+import * as defaultProvisions from "./default-provisions.js";
+import { estimateGpnCount } from "./gpn-heuristic.js";
+import Path from "./common/path.js";
+import PathSet from "./common/path-set.js";
+import VersionedMap from "./versioned-map.js";
+import InstanceSet from "./instance-set.js";
 import {
   Attributes,
   SessionContext,
@@ -57,8 +57,8 @@ import {
   FactoryReset,
   AddObjectResponse,
   GetParameterValuesResponse,
-} from "./types";
-import { getRequestOrigin } from "./forwarded";
+} from "./types.js";
+import { getRequestOrigin } from "./forwarded.js";
 
 const VALID_PARAM_TYPES = new Set([
   "xsd:int",

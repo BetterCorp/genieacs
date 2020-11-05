@@ -23,8 +23,8 @@ import {
   parseAttrs,
   encodeEntities,
   decodeEntities,
-} from "./xml-parser";
-import memoize from "./common/memoize";
+} from "./xml-parser.js";
+import memoize from "./common/memoize.js";
 //import { version as VERSION } from "../package.json";
 import {
   InformRequest,
@@ -48,8 +48,8 @@ import {
   GetRPCMethodsRequest,
   RequestDownloadRequest,
   AcsResponse,
-} from "./types";
-import Path from "./common/path";
+} from "./types.js";
+import Path from "./common/path.js";
 
 const SERVER_NAME = `GenieACS`;
 

@@ -19,12 +19,12 @@
 
 import * as vm from "vm";
 import * as seedrandom from "seedrandom";
-import * as device from "./device";
-import * as extensions from "./extensions";
-import * as logger from "./logger";
-import * as scheduling from "./scheduling";
-import Path from "./common/path";
-import { Fault, SessionContext, ScriptResult } from "./types";
+import * as device from "./device.js";
+import * as extensions from "./extensions.js";
+import * as logger from "./logger.js";
+import * as scheduling from "./scheduling.js";
+import Path from "./common/path.js";
+import { Fault, SessionContext, ScriptResult } from "./types.js";
 
 // Used for throwing to exit user script and commit
 const COMMIT = Symbol();

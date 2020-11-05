@@ -17,18 +17,18 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { MongoClient, Collection } from "mongodb";
-import * as config from "./config";
+import * as MongoDB from "mongodb";
+import * as config from "./config.js";
 
 const MAX_CACHE_TTL = +config.get("MAX_CACHE_TTL");
 
-let clientPromise: Promise<MongoClient>;
-let mongoCollection: Collection;
+let clientPromise: Promise<MongoDB.MongoClient>;
+let mongoCollection: MongoDB.Collection;
 let mongoTimeOffset = 0;
 
 export async function connect(): Promise<void> {
   const MONGODB_CONNECTION_URL = "" + config.get("MONGODB_CONNECTION_URL");
-  clientPromise = MongoClient.connect(MONGODB_CONNECTION_URL, {
+  clientPromise = MongoDB.MongoClient.connect(MONGODB_CONNECTION_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

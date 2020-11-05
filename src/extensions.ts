@@ -19,9 +19,9 @@
 
 import { spawn, ChildProcess } from "child_process";
 import * as crypto from "crypto";
-import * as config from "./config";
-import { Fault } from "./types";
-import { ROOT_DIR } from "./config";
+import * as config from "./config.js";
+import { Fault } from "./types.js";
+import { ROOT_DIR } from "./config.js";
 
 const TIMEOUT = +config.get("EXT_TIMEOUT");
 

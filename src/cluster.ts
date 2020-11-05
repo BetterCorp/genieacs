@@ -19,7 +19,7 @@
 
 import * as cluster from "cluster";
 import { cpus } from "os";
-import * as logger from "./logger";
+import * as logger from "./logger.js";
 
 let respawnTimestamp = 0;
 let crashes: number[] = [];

@@ -18,7 +18,7 @@
  */
 
 import * as parsimmon from "parsimmon";
-import { Expression } from "../types";
+import { Expression } from "../types.js";
 
 // Turn escaped characters into real ones (e.g. "\\n" becomes "\n").
 function interpretEscapes(str): string {

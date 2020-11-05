@@ -19,12 +19,12 @@
 
 import { MongoClient, GridFSBucket, ObjectID } from "mongodb";
 import { Script } from "vm";
-import * as config from "../config";
-import * as mongodbFunctions from "../mongodb-functions";
-import * as expression from "../common/expression";
-import { QueryOptions, Expression } from "../types";
+import * as config from "../config.js";
+import * as mongodbFunctions from "../mongodb-functions.js";
+import * as expression from "../common/expression.js";
+import { QueryOptions, Expression } from "../types.js";
 import { Readable } from "stream";
-import { minimize } from "../common/boolean-expression";
+import { minimize } from "../common/boolean-expression.js";
 
 const CACHE_TTL = 300000;
 

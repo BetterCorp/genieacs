@@ -17,7 +17,7 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { Fault } from "../lib/types";
+import { Fault } from "../types.js";
 
 const jobs = new Set();
 const fileName = process.argv[2];

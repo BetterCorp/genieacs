@@ -25,16 +25,16 @@ import * as koaStatic from "koa-static";
 import * as koaCompress from "koa-compress";
 import koaBodyParser from "koa-bodyparser";
 import * as koaJwt from "koa-jwt";
-import * as config from "./config";
-import api from "./ui/api";
-import Authorizer from "./common/authorizer";
-import * as logger from "./logger";
-import * as localCache from "./local-cache";
-import { PermissionSet } from "./types";
-import { authLocal } from "./ui/api-functions";
-import * as init from "./init";
+import * as config from "./config.js";
+import api from "./ui/api.js";
+import Authorizer from "./common/authorizer.js";
+import * as logger from "./logger.js";
+import * as localCache from "./local-cache.js";
+import { PermissionSet } from "./types.js";
+import { authLocal } from "./ui/api-functions.js";
+import * as init from "./init.js";
 //import { version as VERSION } from "../package.json";
-import memoize from "./common/memoize";
+import memoize from "./common/memoize.js";
 
 declare module "koa" {
   interface Request {

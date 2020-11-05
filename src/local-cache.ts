@@ -19,14 +19,14 @@
 
 import * as vm from "vm";
 import * as crypto from "crypto";
-import * as config from "./config";
-import * as db from "./db";
-import * as cache from "./cache";
-import { convertOldPrecondition } from "./mongodb-functions";
-import * as logger from "./logger";
-import * as scheduling from "./scheduling";
-import * as expression from "./common/expression";
-import { parse } from "./common/expression-parser";
+import * as config from "./config.js";
+import * as db from "./db.js";
+import * as cache from "./cache.js";
+import { convertOldPrecondition } from "./mongodb-functions.js";
+import * as logger from "./logger.js";
+import * as scheduling from "./scheduling.js";
+import * as expression from "./common/expression.js";
+import { parse } from "./common/expression-parser.js";
 import {
   Preset,
   Expression,
@@ -37,7 +37,7 @@ import {
   Permissions,
   Config,
   UiConfig,
-} from "./types";
+} from "./types.js";
 
 interface Snapshot {
   presets: Preset[];

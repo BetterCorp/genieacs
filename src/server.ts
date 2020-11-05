@@ -22,7 +22,7 @@ import * as http from "http";
 import * as https from "https";
 import { Socket } from "net";
 import * as path from "path";
-import { ROOT_DIR } from "./config";
+import { ROOT_DIR } from "./config.js";
 
 let server: http.Server | https.Server;
 let listener: (...args) => void;

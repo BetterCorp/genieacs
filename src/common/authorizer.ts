@@ -17,8 +17,8 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { PermissionSet, Expression } from "../types";
-import { evaluate, or } from "./expression";
+import { PermissionSet, Expression } from "../types.js";
+import { evaluate, or } from "./expression.js";
 
 export default class Authorizer {
   private permissionSets: PermissionSet[];

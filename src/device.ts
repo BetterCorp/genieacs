@@ -17,14 +17,14 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Path from "./common/path";
+import Path from "./common/path.js";
 import {
   DeviceData,
   Declaration,
   Clear,
   AttributeTimestamps,
   Attributes,
-} from "./types";
+} from "./types.js";
 
 const CHANGE_FLAGS = {
   object: 2,

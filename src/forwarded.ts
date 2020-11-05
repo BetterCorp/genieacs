@@ -19,8 +19,10 @@
 
 import { IncomingMessage } from "http";
 import { TLSSocket } from "tls";
-import { parseCIDR, parse, IPv6, IPv4 } from "ipaddr.js";
-import * as config from "./config";
+import * as IPAddr from "ipaddr.js";
+const parseCIDR = IPAddr.parseCIDR,
+  parse = IPAddr.parse;
+import * as config from "./config.js";
 
 interface RequestOrigin {
   localAddress: string;
@@ -33,7 +35,7 @@ interface RequestOrigin {
 
 const FORWARDED_HEADER = "" + config.get("FORWARDED_HEADER");
 const cache = new WeakMap<IncomingMessage, RequestOrigin>();
-const cidrs: [IPv4 | IPv6, number][] = [];
+const cidrs: [IPAddr.IPv4 | IPAddr.IPv6, number][] = [];
 
 for (const str of FORWARDED_HEADER.split(",").map((s) => s.trim())) {
   try {
@@ -49,9 +51,9 @@ for (const str of FORWARDED_HEADER.split(",").map((s) => s.trim())) {
   }
 }
 
-function parseForwardedHeader(str: string): { [name: string]: string } {
+function parseForwardedHeader (str: string): { [name: string]: string; } {
   str = str.toLowerCase();
-  const res: { [name: string]: string } = {};
+  const res: { [name: string]: string; } = {};
   let keyIdx = 0;
   let valueIdx = -1;
   let key: string;
@@ -94,7 +96,7 @@ function parseForwardedHeader(str: string): { [name: string]: string } {
   return res;
 }
 
-export function getRequestOrigin(request: IncomingMessage): RequestOrigin {
+export function getRequestOrigin (request: IncomingMessage): RequestOrigin {
   let origin = cache.get(request);
   if (!origin) {
     const soc = request.socket;
@@ -109,8 +111,8 @@ export function getRequestOrigin(request: IncomingMessage): RequestOrigin {
 
     const header = request.headers["forwarded"];
     if (header) {
-      const ip = parse(soc.remoteAddress) as IPv4;
-      if (cidrs.some((cidr) => ip.match(cidr as [IPv4, number]))) {
+      const ip = parse(soc.remoteAddress) as IPAddr.IPv4;
+      if (cidrs.some((cidr) => ip.match(cidr as [IPAddr.IPv4, number]))) {
         const parsed = parseForwardedHeader(header);
 
         if (parsed["proto"] === "https") {

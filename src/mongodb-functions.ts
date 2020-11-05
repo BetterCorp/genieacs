@@ -17,10 +17,11 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ObjectID } from "mongodb";
-import { map, parse, stringify, parseList } from "./common/expression-parser";
-import { likePatternToRegExp } from "./common/expression";
-import { Expression, Fault, Task } from "./types";
+import * as MongoDB from "mongodb";
+const ObjectID = MongoDB.ObjectID;
+import { map, parse, stringify, parseList } from "./common/expression-parser.js";
+import { likePatternToRegExp } from "./common/expression.js";
+import { Expression, Fault, Task } from "./types.js";
 
 const isArray = Array.isArray;
 

@@ -17,10 +17,10 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as localCache from "./local-cache";
-import { generateSalt, hashPassword } from "./auth";
-import * as db from "./ui/db";
-import { del } from "./cache";
+import * as localCache from "./local-cache.js";
+import { generateSalt, hashPassword } from "./auth.js";
+import * as db from "./ui/db.js";
+import { del } from "./cache.js";
 
 interface Status {
   users: boolean;

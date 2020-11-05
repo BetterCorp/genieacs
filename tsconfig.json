@@ -4,8 +4,8 @@
     "paths": {
       "*": [ "types/*" ]
     },
-    "target": "es2020",
-    "module": "es2020",
+    "target": "esnext",
+    "module": "ES2015",
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,

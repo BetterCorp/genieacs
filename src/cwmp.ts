@@ -20,19 +20,19 @@
 import * as zlib from "zlib";
 import * as crypto from "crypto";
 import { Socket } from "net";
-import * as auth from "./auth";
-import * as config from "./config";
-import * as common from "./common";
-import * as soap from "./soap";
-import * as session from "./session";
-import { evaluateAsync, evaluate, extractParams } from "./common/expression";
-import * as cache from "./cache";
-import * as localCache from "./local-cache";
-import * as db from "./db";
-import * as logger from "./logger";
-import * as scheduling from "./scheduling";
-import Path from "./common/path";
-import * as extensions from "./extensions";
+import * as auth from "./auth.js";
+import * as config from "./config.js";
+import * as common from "./common.js";
+import * as soap from "./soap.js";
+import * as session from "./session.js";
+import { evaluateAsync, evaluate, extractParams } from "./common/expression.js";
+import * as cache from "./cache.js";
+import * as localCache from "./local-cache.js";
+import * as db from "./db.js";
+import * as logger from "./logger.js";
+import * as scheduling from "./scheduling.js";
+import Path from "./common/path.js";
+import * as extensions from "./extensions.js";
 import {
   SessionContext,
   AcsRequest,
@@ -45,14 +45,16 @@ import {
   InformRequest,
   Preset,
   GetRPCMethodsResponse,
-} from "./types";
+} from "./types.js";
 import { IncomingMessage, ServerResponse } from "http";
 import { Readable } from "stream";
 import { promisify } from "util";
-import { decode, encodingExists } from "iconv-lite";
-import { parseXmlDeclaration } from "./xml-parser";
-import * as debug from "./debug";
-import { getRequestOrigin } from "./forwarded";
+import * as IconVLite from "iconv-lite";
+const decode = IconVLite.decode,
+  encodingExists = IconVLite.encodingExists;
+import { parseXmlDeclaration } from "./xml-parser.js";
+import * as debug from "./debug.js";
+import { getRequestOrigin } from "./forwarded.js";
 
 const gzipPromisified = promisify(zlib.gzip);
 const deflatePromisified = promisify(zlib.deflate);
@@ -71,7 +73,7 @@ const stats = {
   initiatedSessions: 0,
 };
 
-async function authenticate(
+async function authenticate (
   sessionContext: SessionContext,
   body: string
 ): Promise<boolean> {
@@ -158,7 +160,7 @@ async function authenticate(
   return false;
 }
 
-async function writeResponse(
+async function writeResponse (
   sessionContext: SessionContext,
   res,
   close = false
@@ -212,14 +214,14 @@ async function writeResponse(
   }
 }
 
-function recordFault(
+function recordFault (
   sessionContext: SessionContext,
   fault: Fault,
   provisions,
   channels
 ): void;
-function recordFault(sessionContext: SessionContext, fault: Fault): void;
-function recordFault(
+function recordFault (sessionContext: SessionContext, fault: Fault): void;
+function recordFault (
   sessionContext: SessionContext,
   fault: Fault,
   provisions?,
@@ -286,10 +288,10 @@ function recordFault(
   session.clearProvisions(sessionContext);
 }
 
-async function inform(
+async function inform (
   sessionContext: SessionContext,
   rpc: SoapMessage
-): Promise<{ code: number; headers: Record<string, string>; data: string }> {
+): Promise<{ code: number; headers: Record<string, string>; data: string; }> {
   const acsResponse = await session.inform(
     sessionContext,
     rpc.cpeRequest as InformRequest
@@ -320,7 +322,7 @@ async function inform(
   return res;
 }
 
-async function transferComplete(sessionContext, rpc): Promise<void> {
+async function transferComplete (sessionContext, rpc): Promise<void> {
   const { acsResponse, operation, fault } = await session.transferComplete(
     sessionContext,
     rpc.cpeRequest
@@ -354,7 +356,7 @@ async function transferComplete(sessionContext, rpc): Promise<void> {
 }
 
 // Append provisions and remove duplicates
-function appendProvisions(original, toAppend): boolean {
+function appendProvisions (original, toAppend): boolean {
   let modified = false;
   const stringified = new WeakMap();
 
@@ -385,7 +387,7 @@ function appendProvisions(original, toAppend): boolean {
   return modified;
 }
 
-async function applyPresets(sessionContext: SessionContext): Promise<void> {
+async function applyPresets (sessionContext: SessionContext): Promise<void> {
   const deviceData = sessionContext.deviceData;
   const presets = localCache.getPresets(sessionContext.cacheSnapshot);
 
@@ -430,7 +432,7 @@ async function applyPresets(sessionContext: SessionContext): Promise<void> {
       deviceEvents[p.segments[1] as string] = true;
   }
 
-  const parameters: { [name: string]: Path } = {};
+  const parameters: { [name: string]: Path; } = {};
   const filteredPresets: Preset[] = [];
 
   for (const preset of presets) {
@@ -596,7 +598,7 @@ async function applyPresets(sessionContext: SessionContext): Promise<void> {
   return sendAcsRequest(sessionContext, id, acsRequest);
 }
 
-async function nextRpc(sessionContext: SessionContext): Promise<void> {
+async function nextRpc (sessionContext: SessionContext): Promise<void> {
   const { fault: fault, rpcId: id, rpc: acsRequest } = await session.rpcRequest(
     sessionContext,
     null
@@ -728,7 +730,7 @@ async function nextRpc(sessionContext: SessionContext): Promise<void> {
   return nextRpc(sessionContext);
 }
 
-async function endSession(sessionContext: SessionContext): Promise<boolean> {
+async function endSession (sessionContext: SessionContext): Promise<boolean> {
   let saveCache = sessionContext.cacheUntil != null;
 
   const promises = [];
@@ -796,7 +798,7 @@ async function endSession(sessionContext: SessionContext): Promise<boolean> {
   return sessionContext.new;
 }
 
-async function sendAcsRequest(
+async function sendAcsRequest (
   sessionContext: SessionContext,
   id?: string,
   acsRequest?: AcsRequest
@@ -842,7 +844,7 @@ async function sendAcsRequest(
   return writeResponse(sessionContext, res);
 }
 
-async function getSession(connection, sessionId): Promise<SessionContext> {
+async function getSession (connection, sessionId): Promise<SessionContext> {
   const sessionContext = currentSessions.get(connection);
   if (sessionContext) {
     currentSessions.delete(connection);
@@ -863,7 +865,7 @@ async function getSession(connection, sessionId): Promise<SessionContext> {
 const remoteAddressWorkaround = new WeakMap<Socket, string>();
 
 // When socket closes, store active sessions in cache
-export function onConnection(socket: Socket): void {
+export function onConnection (socket: Socket): void {
   // The property remoteAddress may be undefined after the connection is
   // closed, unless we read it at least once (caching?)
   remoteAddressWorkaround.set(socket, socket.remoteAddress);
@@ -922,13 +924,13 @@ setInterval(() => {
   stats.initiatedSessions = 0;
 }, 10000).unref();
 
-async function getDueTasksAndFaultsAndOperations(
+async function getDueTasksAndFaultsAndOperations (
   deviceId,
   timestamp
 ): Promise<{
   tasks: Task[];
-  faults: { [channel: string]: SessionFault };
-  operations: { [commandKey: string]: Operation };
+  faults: { [channel: string]: SessionFault; };
+  operations: { [commandKey: string]: Operation; };
   ttl: number;
 }> {
   const res = await cache.get(`${deviceId}_tasks_faults_operations`);
@@ -955,7 +957,7 @@ async function getDueTasksAndFaultsAndOperations(
   };
 }
 
-async function cacheDueTasksAndFaultsAndOperations(
+async function cacheDueTasksAndFaultsAndOperations (
   deviceId,
   tasks,
   faults,
@@ -982,7 +984,7 @@ async function cacheDueTasksAndFaultsAndOperations(
   );
 }
 
-async function reportBadState(sessionContext: SessionContext): Promise<void> {
+async function reportBadState (sessionContext: SessionContext): Promise<void> {
   logger.accessError({
     message: "Bad session state",
     sessionContext: sessionContext,
@@ -997,7 +999,7 @@ async function reportBadState(sessionContext: SessionContext): Promise<void> {
   httpResponse.end(body);
 }
 
-async function responseUnauthorized(
+async function responseUnauthorized (
   sessionContext: SessionContext,
   close: boolean
 ): Promise<void> {
@@ -1034,7 +1036,7 @@ async function responseUnauthorized(
   httpResponse.end(body);
 }
 
-async function processRequest(
+async function processRequest (
   sessionContext: SessionContext,
   rpc: SoapMessage,
   parseWarnings: Record<string, unknown>[],
@@ -1200,7 +1202,7 @@ async function processRequest(
   }
 }
 
-export function listener(
+export function listener (
   httpRequest: IncomingMessage,
   httpResponse: ServerResponse
 ): void {
@@ -1225,16 +1227,16 @@ export function listener(
     });
 }
 
-function decodeString(buffer: Buffer, charset: string): string {
+function decodeString (buffer: Buffer, charset: string): string {
   try {
-    return buffer.toString(charset);
+    return buffer.toString(charset as any);
   } catch (err) {
     if (encodingExists(charset)) return decode(buffer, charset);
   }
   return null;
 }
 
-async function listenerAsync(
+async function listenerAsync (
   httpRequest: IncomingMessage,
   httpResponse: ServerResponse
 ): Promise<void> {

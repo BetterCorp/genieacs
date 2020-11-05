@@ -1,4 +1,4 @@
-import Path from "./common/path";
+import Path from "./common/path.js";
 
 /**
  * Copyright 2013-2019  GenieACS Inc.

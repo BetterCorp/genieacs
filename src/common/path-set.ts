@@ -17,7 +17,7 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Path from "./path";
+import Path from "./path.js";
 
 export default class PathSet {
   private lengthIndex: Set<Path>[];

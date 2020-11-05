@@ -20,8 +20,8 @@
 import * as fs from "fs";
 import * as os from "os";
 
-import * as config from "./config";
-import { getRequestOrigin } from "./forwarded";
+import * as config from "./config.js";
+import { getRequestOrigin } from "./forwarded.js";
 import {
   SessionContext,
   AcsRequest,
@@ -29,7 +29,7 @@ import {
   CpeFault,
   InformRequest,
   Fault,
-} from "./types";
+} from "./types.js";
 
 const REOPEN_EVERY = 60000;
 

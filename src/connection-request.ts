@@ -21,11 +21,11 @@ import * as crypto from "crypto";
 import * as dgram from "dgram";
 import { parse } from "url";
 import * as http from "http";
-import { evaluateAsync } from "./common/expression";
-import { Expression } from "./types";
-import * as auth from "./auth";
-import * as extensions from "./extensions";
-import * as debug from "./debug";
+import { evaluateAsync } from "./common/expression.js";
+import { Expression } from "./types.js";
+import * as auth from "./auth.js";
+import * as extensions from "./extensions.js";
+import * as debug from "./debug.js";
 
 async function extractAuth(
   exp: Expression,

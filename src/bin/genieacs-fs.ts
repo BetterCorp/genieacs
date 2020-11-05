@@ -17,46 +17,40 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as config from "../lib/config";
-import * as logger from "../lib/logger";
-import * as cluster from "../lib/cluster";
-import * as server from "../lib/server";
-import { listener } from "../lib/ui";
-import * as extensions from "../lib/extensions";
-import * as db from "../lib/ui/db";
-import * as db2 from "../lib/db";
-import * as cache from "../lib/cache";
-import { version as VERSION } from "../package.json";
+import * as config from "../config.js";
+import * as logger from "../logger.js";
+import * as cluster from "../cluster.js";
+import * as server from "../server.js";
+import { listener } from "../fs.js";
+import * as db from "../db.js";
+import * as cache from "../cache.js";
+//import { version as VERSION } from "../package.json";
 
-logger.init("ui", VERSION);
+//logger.init("fs", VERSION);
 
-const SERVICE_ADDRESS = config.get("UI_INTERFACE") as string;
-const SERVICE_PORT = config.get("UI_PORT") as number;
+const SERVICE_ADDRESS = config.get("FS_INTERFACE") as string;
+const SERVICE_PORT = config.get("FS_PORT") as number;
 
 function exitWorkerGracefully(): void {
   setTimeout(exitWorkerUngracefully, 5000).unref();
   Promise.all([
     db.disconnect(),
-    db2.disconnect(),
     cache.disconnect(),
-    extensions.killAll(),
     cluster.worker.disconnect(),
   ]).catch(exitWorkerUngracefully);
 }
 
 function exitWorkerUngracefully(): void {
-  extensions.killAll().finally(() => {
-    process.exit(1);
-  });
+  process.exit(1);
 }
 
 if (!cluster.worker) {
-  const WORKER_COUNT = config.get("UI_WORKER_PROCESSES") as number;
+  const WORKER_COUNT = config.get("FS_WORKER_PROCESSES") as number;
 
   logger.info({
-    message: `genieacs-ui starting`,
+    message: `genieacs-fs starting`,
     pid: process.pid,
-    version: VERSION,
+    //version: VERSION,
   });
 
   cluster.start(WORKER_COUNT, SERVICE_PORT, SERVICE_ADDRESS);
@@ -80,8 +74,8 @@ if (!cluster.worker) {
   });
 } else {
   const ssl = {
-    key: config.get("UI_SSL_KEY") as string,
-    cert: config.get("UI_SSL_CERT") as string,
+    key: config.get("FS_SSL_KEY") as string,
+    cert: config.get("FS_SSL_CERT") as string,
   };
 
   let stopping = false;
@@ -99,12 +93,10 @@ if (!cluster.worker) {
 
   const _listener = (req, res): void => {
     if (stopping) res.setHeader("Connection", "close");
-    listener(req, res).catch((err) => {
-      throw err;
-    });
+    listener(req, res);
   };
 
-  const initPromise = Promise.all([db2.connect(), cache.connect()])
+  const initPromise = Promise.all([db.connect(), cache.connect()])
     .then(() => {
       server.start(SERVICE_PORT, SERVICE_ADDRESS, ssl, _listener);
     })

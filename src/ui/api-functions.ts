@@ -18,17 +18,17 @@
  */
 
 import { ObjectID } from "mongodb";
-import * as db from "./db";
-import { del } from "../cache";
-import { getUsers } from "../local-cache";
-import { hashPassword } from "../auth";
+import * as db from "./db.js";
+import { del } from "../cache.js";
+import { getUsers } from "../local-cache.js";
+import { hashPassword } from "../auth.js";
 import {
   insertTasks,
   watchTask,
   connectionRequest,
   deleteDevice,
-} from "../api-functions";
-import { Task } from "../types";
+} from "../api-functions.js";
+import { Task } from "../types.js";
 
 async function deleteFault(id): Promise<void> {
   const deviceId = id.split(":", 1)[0];

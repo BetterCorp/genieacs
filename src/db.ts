@@ -17,10 +17,11 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { MongoClient, ObjectID, Collection } from "mongodb";
-import { get } from "./config";
-import { escapeRegExp } from "./common";
-import { parse } from "./common/expression-parser";
+import * as MongoDB from "mongodb";
+const ObjectID = MongoDB.ObjectID;
+import { get } from "./config.js";
+import { escapeRegExp } from "./common.js";
+import { parse } from "./common/expression-parser.js";
 import {
   DeviceData,
   Attributes,
@@ -28,24 +29,24 @@ import {
   Task,
   Operation,
   Expression,
-} from "./types";
-import Path from "./common/path";
+} from "./types.js";
+import Path from "./common/path.js";
 
-export let tasksCollection: Collection,
-  devicesCollection: Collection,
-  presetsCollection: Collection,
-  objectsCollection: Collection,
-  provisionsCollection: Collection,
-  virtualParametersCollection: Collection,
-  faultsCollection: Collection,
-  filesCollection: Collection,
-  operationsCollection: Collection,
-  permissionsCollection: Collection,
-  usersCollection: Collection,
-  configCollection: Collection;
+export let tasksCollection: MongoDB.Collection,
+  devicesCollection: MongoDB.Collection,
+  presetsCollection: MongoDB.Collection,
+  objectsCollection: MongoDB.Collection,
+  provisionsCollection: MongoDB.Collection,
+  virtualParametersCollection: MongoDB.Collection,
+  faultsCollection: MongoDB.Collection,
+  filesCollection: MongoDB.Collection,
+  operationsCollection: MongoDB.Collection,
+  permissionsCollection: MongoDB.Collection,
+  usersCollection: MongoDB.Collection,
+  configCollection: MongoDB.Collection;
 
-let clientPromise: Promise<MongoClient>;
-export let client: MongoClient;
+let clientPromise: Promise<MongoDB.MongoClient>;
+export let client: MongoDB.MongoClient;
 
 function compareAccessLists(list1: string[], list2: string[]): boolean {
   if (list1.length !== list2.length) return false;
@@ -54,7 +55,7 @@ function compareAccessLists(list1: string[], list2: string[]): boolean {
 }
 
 export async function connect(): Promise<void> {
-  clientPromise = MongoClient.connect("" + get("MONGODB_CONNECTION_URL"), {
+  clientPromise = MongoDB.MongoClient.connect("" + get("MONGODB_CONNECTION_URL"), {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

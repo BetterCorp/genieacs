@@ -18,9 +18,9 @@
  */
 
 import { parse } from "url";
-import * as db from "./db";
-import * as common from "./common";
-import * as cache from "./cache";
+import * as db from "./db.js";
+import * as common from "./common.js";
+import * as cache from "./cache.js";
 import {
   getCurrentSnapshot,
   getConfig,

@@ -19,17 +19,17 @@
 
 import * as stream from "stream";
 import * as Router from "koa-router";
-import * as db from "./db";
-import * as apiFunctions from "./api-functions";
-import { evaluate, and, extractParams } from "../common/expression";
-import { parse } from "../common/expression-parser";
-import * as logger from "../logger";
-import { getConfig } from "../local-cache";
-import { QueryOptions, Expression } from "../types";
-import { generateSalt, hashPassword } from "../auth";
-import { del } from "../cache";
-import Authorizer from "../common/authorizer";
-import { ping } from "../ping";
+import * as db from "./db.js";
+import * as apiFunctions from "./api-functions.js";
+import { evaluate, and, extractParams } from "../common/expression.js";
+import { parse } from "../common/expression-parser.js";
+import * as logger from "../logger.js";
+import { getConfig } from "../local-cache.js";
+import { QueryOptions, Expression } from "../types.js";
+import { generateSalt, hashPassword } from "../auth.js";
+import { del } from "../cache.js";
+import Authorizer from "../common/authorizer.js";
+import { ping } from "../ping.js";
 import * as url from "url";
 
 const router = new Router();

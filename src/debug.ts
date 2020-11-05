@@ -26,7 +26,7 @@ import {
 import { Socket } from "net";
 import { appendFileSync } from "fs";
 import * as yaml from "yaml";
-import * as config from "./config";
+import * as config from "./config.js";
 
 const DEBUG_FILE = "" + config.get("DEBUG_FILE");
 const DEBUG_FORMAT = "" + config.get("DEBUG_FORMAT");

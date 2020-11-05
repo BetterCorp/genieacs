@@ -21,9 +21,9 @@ import * as url from "url";
 import * as querystring from "querystring";
 import { IncomingMessage, ServerResponse } from "http";
 import { GridFSBucket } from "mongodb";
-import * as db from "./db";
-import * as logger from "./logger";
-import { getRequestOrigin } from "./forwarded";
+import * as db from "./db.js";
+import * as logger from "./logger.js";
+import { getRequestOrigin } from "./forwarded.js";
 
 export function listener(
   request: IncomingMessage,

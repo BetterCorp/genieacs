@@ -17,17 +17,17 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as config from "../lib/config";
-import * as logger from "../lib/logger";
-import * as cluster from "../lib/cluster";
-import * as server from "../lib/server";
-import { listener } from "../lib/nbi";
-import * as db from "../lib/db";
-import * as extensions from "../lib/extensions";
-import * as cache from "../lib/cache";
-import { version as VERSION } from "../package.json";
+import * as config from "../config.js";
+import * as logger from "../logger.js";
+import * as cluster from "../cluster.js";
+import * as server from "../server.js";
+import { listener } from "../nbi.js";
+import * as db from "../db.js";
+import * as extensions from "../extensions.js";
+import * as cache from "../cache.js";
+//import { version as VERSION } from "../package.json";
 
-logger.init("nbi", VERSION);
+//logger.init("nbi", VERSION);
 
 const SERVICE_ADDRESS = config.get("NBI_INTERFACE") as string;
 const SERVICE_PORT = config.get("NBI_PORT") as number;
@@ -54,7 +54,7 @@ if (!cluster.worker) {
   logger.info({
     message: `genieacs-nbi starting`,
     pid: process.pid,
-    version: VERSION,
+    //version: VERSION,
   });
 
   cluster.start(WORKER_COUNT, SERVICE_PORT, SERVICE_ADDRESS);

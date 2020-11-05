@@ -17,11 +17,11 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Path from "./common/path";
-import * as config from "./config";
-import * as device from "./device";
-import * as scheduling from "./scheduling";
-import { SessionContext, Declaration } from "./types";
+import Path from "./common/path.js";
+import * as config from "./config.js";
+import * as device from "./device.js";
+import * as scheduling from "./scheduling.js";
+import { SessionContext, Declaration } from "./types.js";
 
 const MAX_DEPTH = +config.get("MAX_DEPTH");
 
