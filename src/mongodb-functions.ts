@@ -22,6 +22,7 @@ const ObjectID = MongoDB.ObjectID;
 import { map, parse, stringify, parseList } from "./common/expression-parser.js";
 import { likePatternToRegExp } from "./common/expression.js";
 import { Expression, Fault, Task } from "./types.js";
+import { decodeTag, encodeTag } from "./common";
 
 const isArray = Array.isArray;
 
@@ -44,7 +45,7 @@ export function processDeviceFilter(filter: Expression): Expression {
       exp[1][0] === "PARAM" &&
       exp[1][1].startsWith("Tags.")
     ) {
-      const t = exp[1][1].slice(5);
+      const t = decodeTag(exp[1][1].slice(5));
       if (exp[0] === "IS NULL") return ["_tags", t, false];
       else if (exp[0] === "IS NOT NULL") return ["_tags", t, true];
       else if (exp[0] === "=" && exp[2] === true) return ["_tags", t, true];
@@ -407,7 +408,7 @@ export function flattenDevice(device: Record<string, unknown>): FlatDevice {
           };
 
           for (const t of tree as string[]) {
-            output[`Tags.${t}`] = {
+            output[`Tags.${encodeTag(t)}`] = {
               value: [true, "xsd:boolean"],
               valueTimestamp: timestamp,
               writable: true,
@@ -511,11 +512,11 @@ export function convertOldPrecondition(
             if (op === "$ne") {
               if (typeof v["$ne"] !== "string")
                 throw new Error("Only string values are allowed for _tags");
-              conjs.push(["IS NULL", ["PARAM", `Tags.${val}`]]);
+              conjs.push(["IS NULL", ["PARAM", `Tags.${encodeTag(val)}`]]);
             } else if (op === "$eq") {
               if (typeof v["$eq"] !== "string")
                 throw new Error("Only string values are allowed for _tags");
-              conjs.push(["IS NOT NULL", ["PARAM", `Tags.${val}`]]);
+              conjs.push(["IS NOT NULL", ["PARAM", `Tags.${encodeTag(val)}`]]);
             } else {
               throw new Error(`Invalid tag query`);
             }
@@ -523,7 +524,10 @@ export function convertOldPrecondition(
           if (conjs.length === 1) expressions.push(conjs[0]);
           else if (conjs.length > 1) expressions.push(["AND", ...conjs]);
         } else {
-          expressions.push(["IS NOT NULL", ["PARAM", `Tags.${v}`]]);
+          expressions.push([
+            "IS NOT NULL",
+            ["PARAM", `Tags.${encodeTag(v as string)}`],
+          ]);
         }
       } else if (k.startsWith("Tags.")) {
         let exists: boolean;

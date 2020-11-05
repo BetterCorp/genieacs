@@ -92,9 +92,7 @@ async function authenticate (
   }
 
   if (authentication && authentication.method === "Digest") {
-    const sessionNonce = sessionsNonces.get(
-      sessionContext.httpRequest.connection
-    );
+    const sessionNonce = sessionsNonces.get(sessionContext.httpRequest.socket);
 
     if (
       !sessionNonce ||
@@ -187,7 +185,7 @@ async function writeResponse (
   }
 
   const httpResponse = sessionContext.httpResponse;
-  const connection = httpResponse.connection;
+  const connection = httpResponse.socket;
 
   httpResponse.setHeader("Content-Length", Buffer.byteLength(data));
   httpResponse.writeHead(res.code, res.headers);
@@ -844,8 +842,11 @@ async function sendAcsRequest (
   return writeResponse(sessionContext, res);
 }
 
-async function getSession (connection, sessionId): Promise<SessionContext> {
-  const sessionContext = currentSessions.get(connection);
+async function getSession(
+  connection: Socket,
+  sessionId: string
+): Promise<SessionContext> {
+  let sessionContext = currentSessions.get(connection);
   if (sessionContext) {
     currentSessions.delete(connection);
     return sessionContext;
@@ -857,7 +858,9 @@ async function getSession (connection, sessionId): Promise<SessionContext> {
 
   const sessionContextString = await cache.pop(`session_${sessionId}`);
   if (!sessionContextString) return null;
-  return session.deserialize(sessionContextString);
+  sessionContext = await session.deserialize(sessionContextString);
+  connection.setTimeout(sessionContext.timeout);
+  return sessionContext;
 }
 
 // Only needed to prevent tree shaking from removing the remoteAddress
@@ -990,7 +993,7 @@ async function reportBadState (sessionContext: SessionContext): Promise<void> {
     sessionContext: sessionContext,
   });
   const httpResponse = sessionContext.httpResponse;
-  currentSessions.delete(httpResponse.connection);
+  currentSessions.delete(httpResponse.socket);
   const body = "Bad session state";
   httpResponse.setHeader("Content-Length", Buffer.byteLength(body));
   httpResponse.writeHead(400, { Connection: "close" });
@@ -1017,14 +1020,14 @@ async function responseUnauthorized (
       resHeaders["WWW-Authenticate"] = `Basic realm="${REALM}"`;
     } else {
       const nonce = crypto.randomBytes(16).toString("hex");
-      sessionsNonces.set(sessionContext.httpRequest.connection, nonce);
+      sessionsNonces.set(sessionContext.httpRequest.socket, nonce);
       let d = `Digest realm="${REALM}"`;
       d += ',qop="auth,auth-int"';
       d += `,nonce="${nonce}"`;
 
       resHeaders["WWW-Authenticate"] = d;
     }
-    currentSessions.set(sessionContext.httpRequest.connection, sessionContext);
+    currentSessions.set(sessionContext.httpRequest.socket, sessionContext);
   }
 
   const httpResponse = sessionContext.httpResponse;
@@ -1044,7 +1047,6 @@ async function processRequest (
 ): Promise<void> {
   for (const w of parseWarnings) {
     w.sessionContext = sessionContext;
-    w.rpc = rpc;
     logger.accessWarn(w);
   }
 
@@ -1071,6 +1073,8 @@ async function processRequest (
         (e) => session.configContextCallback(sessionContext, e)
       );
     }
+
+    sessionContext.httpRequest.socket.setTimeout(sessionContext.timeout * 1000);
 
     if (sessionContext.debug) {
       debug.incomingHttpRequest(
@@ -1212,13 +1216,13 @@ export function listener (
       stats.concurrentRequests -= 1;
     })
     .catch((err) => {
-      currentSessions.delete(httpResponse.connection);
+      currentSessions.delete(httpResponse.socket);
       stats.concurrentRequests -= 1;
       setTimeout(() => {
         throw err;
       });
       try {
-        httpResponse.connection.unref();
+        httpResponse.socket.unref();
         httpResponse.writeHead(500, { Connection: "close" });
         httpResponse.end(`${err.name}: ${err.message}`);
       } catch (err) {
@@ -1229,7 +1233,7 @@ export function listener (
 
 function decodeString (buffer: Buffer, charset: string): string {
   try {
-    return buffer.toString(charset as any);
+    return buffer.toString(charset as BufferEncoding);
   } catch (err) {
     if (encodingExists(charset)) return decode(buffer, charset);
   }
@@ -1314,9 +1318,9 @@ async function listenerAsync (
   // Request aborted
   if (!body) return;
 
-  const newConnection = !currentSessions.has(httpRequest.connection);
+  const newConnection = !currentSessions.has(httpRequest.socket);
 
-  const sessionContext = await getSession(httpRequest.connection, sessionId);
+  const sessionContext = await getSession(httpRequest.socket, sessionId);
 
   if (sessionContext) {
     sessionContext.httpRequest = httpRequest;
@@ -1354,7 +1358,7 @@ async function listenerAsync (
     return;
   }
 
-  let charset;
+  let charset: string;
   if (httpRequest.headers["content-type"]) {
     const m = httpRequest.headers["content-type"].match(
       /charset=['"]?([^'"\s]+)/i
@@ -1416,7 +1420,7 @@ async function listenerAsync (
   }
 
   const parseWarnings = [];
-  let rpc;
+  let rpc: SoapMessage;
   try {
     rpc = soap.request(
       bodyStr,
@@ -1521,7 +1525,6 @@ async function listenerAsync (
   _sessionContext.httpRequest = httpRequest;
   _sessionContext.httpResponse = httpResponse;
   _sessionContext.sessionId = crypto.randomBytes(8).toString("hex");
-  httpRequest.connection.setTimeout(_sessionContext.timeout * 1000);
 
   const {
     tasks: dueTasks,
