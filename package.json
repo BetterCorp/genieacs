@@ -14,10 +14,9 @@
   ],
   "author": "Zaid Abdulla <zaid@genieacs.com>",
   "license": "AGPL-3.0",
-  "preferGlobal": true,
+  "private": true,
   "directories": {
-    "bin": "bin",
-    "tools": "tools"
+    "bin": "bin"
   },
   "dependencies": {
     "espresso-iisojs": "^1.0.3",
@@ -33,14 +32,14 @@
     "later": "^1.2.0",
     "mongodb": "^3.6.2",
     "parsimmon": "^1.16.0",
-    "seedrandom": "^3.0.5",
-    "yaml": "^1.10.0"
+    "seedrandom": "^3.0.5"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^10.0.0",
     "@rollup/plugin-typescript": "^6.0.0",
+    "@types/codemirror": "0.0.106",
     "@types/jsonwebtoken": "^8.5.0",
     "@types/koa": "^2.11.6",
     "@types/koa-compress": "^4.0.1",
@@ -60,7 +59,6 @@
     "eslint": "^7.12.1",
     "eslint-config-prettier": "^6.14.0",
     "esm": "^3.2.25",
-    "jsbi": "^3.1.4",
     "mithril": "^2.0.4",
     "postcss": "^8.1.4",
     "postcss-import": "^13.0.0",
@@ -68,19 +66,18 @@
     "prettier": "^2.1.2",
     "rollup": "^2.32.1",
     "rollup-plugin-terser": "^7.0.2",
-    "source-map-loader": "^1.1.1",
     "svgo": "^1.3.2",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
-    "webpack": "^5.2.0"
+    "yaml": "^1.10.0"
   },
   "engines": {
     "node": ">=12.13.0"
   },
   "scripts": {
     "test": "ava --verbose --color",
-    "lint-eslint": "eslint --fix \"bin/*.ts\" \"lib/**/*.ts\" \"ui/**/*.ts\" \"test/**/*.ts\" \"build/**/*.ts\" \"tools/*.ts\"",
-    "lint-prettier": "prettier --parser typescript --write \"bin/**/*.ts\" \"lib/**/*.ts\" \"ui/**/*.ts\" \"test/**/*.ts\" \"build/**/*.ts\" \"tools/**/*.ts\"",
+    "lint-eslint": "eslint --fix \"bin/*.ts\" \"lib/**/*.ts\" \"ui/**/*.ts\" \"test/**/*.ts\" \"build/**/*.ts\"",
+    "lint-prettier": "prettier --prose-wrap always --write .",
     "lint-tsc": "tsc --noEmit",
     "lint": "npm run lint-eslint && npm run lint-prettier && npm run lint-tsc",
     "build": "node -r esm -r ts-node/register/transpile-only build/build"

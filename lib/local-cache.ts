@@ -50,8 +50,8 @@ interface Snapshot {
   ui: UiConfig;
 }
 
-const REFRESH = 3000;
-const EVICT_TIMEOUT = 60000;
+const REFRESH = 5000;
+const EVICT_TIMEOUT = 120000;
 
 const snapshots = new Map<string, Snapshot>();
 let currentSnapshot: string = null;
@@ -398,7 +398,7 @@ async function refresh(): Promise<void> {
     return;
   }
 
-  const unlockOrExtend = await cache.lock("presets_hash_lock", 3);
+  const lockToken = await cache.acquireLock("presets_hash_lock", 5000, 5000);
 
   const res = await Promise.all([
     fetchPresets(),
@@ -432,7 +432,7 @@ async function refresh(): Promise<void> {
   currentSnapshot = computeHash(snapshot);
   snapshots.set(currentSnapshot, snapshot);
   await cache.set("presets_hash", currentSnapshot, 300);
-  await unlockOrExtend(0);
+  await cache.releaseLock("presets_hash_lock", lockToken);
 
   nextRefresh = now + (REFRESH - (now % REFRESH));
 }

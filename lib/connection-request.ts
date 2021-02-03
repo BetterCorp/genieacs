@@ -62,7 +62,6 @@ async function extractAuth(
 
 function httpGet(
   options: http.RequestOptions,
-  timeout,
   _debug: boolean,
   deviceId: string
 ): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders }> {
@@ -77,15 +76,12 @@ function httpGet(
         }
       })
       .on("error", (err) => {
-        req.abort();
-        reject(new Error("Device is offline"));
+        req.destroy();
+        reject(err);
         if (_debug) debug.outgoingHttpRequestError(req, deviceId, options, err);
       })
-      .on("socket", (socket) => {
-        socket.setTimeout(timeout);
-        socket.on("timeout", () => {
-          req.abort();
-        });
+      .on("timeout", () => {
+        req.destroy();
       });
   });
 }
@@ -97,14 +93,15 @@ export async function httpConnectionRequest(
   timeout: number,
   _debug: boolean,
   deviceId: string
-): Promise<void> {
+): Promise<string> {
   const options: http.RequestOptions = parse(address);
   if (options.protocol !== "http:")
-    throw new Error("Invalid connection request URL or protocol");
+    return "Invalid connection request URL or protocol";
 
   options.agent = new http.Agent({
     maxSockets: 1,
     keepAlive: true,
+    timeout: timeout,
   });
 
   let authHeader: Record<string, string>;
@@ -115,8 +112,7 @@ export async function httpConnectionRequest(
     let opts = options;
     if (authHeader) {
       if (authHeader["method"] === "Basic") {
-        if (!allowBasicAuth)
-          throw new Error("Basic HTTP authentication not allowed");
+        if (!allowBasicAuth) return "Basic HTTP authentication not allowed";
 
         opts = Object.assign(
           {
@@ -143,17 +139,34 @@ export async function httpConnectionRequest(
           options
         );
       } else {
-        throw new Error("Unrecognized auth method");
+        return "Unrecognized auth method";
       }
     }
 
-    let res = await httpGet(opts, timeout, _debug, deviceId);
+    let res: { statusCode: number; headers: http.IncomingHttpHeaders };
+    try {
+      res = await httpGet(opts, _debug, deviceId);
+    } catch (err) {
+      // Workaround for some devices unexpectedly closing the connection
+      if (authHeader) {
+        try {
+          res = await httpGet(opts, _debug, deviceId);
+        } catch (err) {
+          return `Connection request error: ${err.message}`;
+        }
+      }
 
-    // Workaround for some devices unexpectedly closing the connection
-    if (res.statusCode === 0 && authHeader)
-      res = await httpGet(opts, timeout, _debug, deviceId);
-    if (res.statusCode === 0) throw new Error("Device is offline");
-    if (res.statusCode === 200 || res.statusCode === 204) return;
+      if (err["code"] === "ECONNRESET" || err["code"] === "ECONNREFUSED")
+        return "Device is offline";
+
+      return `Connection request error: ${err.message}`;
+    }
+
+    if (res.statusCode === 200 || res.statusCode === 204) return "";
+
+    // When a Connection Request is received for the Virtual CWMP Device and the Proxied
+    // Device is offline the CPE Proxier MUST respond with an HTTP 503 failure
+    if (res.statusCode === 503) return "Device is offline";
 
     if (res.statusCode === 401 && res.headers["www-authenticate"]) {
       authHeader = auth.parseWwwAuthenticateHeader(
@@ -161,12 +174,11 @@ export async function httpConnectionRequest(
       );
       [username, password, authExp] = await extractAuth(authExp, false);
     } else {
-      throw new Error(
-        `Unexpected response code from device: ${res.statusCode}`
-      );
+      return `Connection request error: Unexpected status code ${res.statusCode}`;
     }
   }
-  throw new Error("Incorrect connection request credentials");
+
+  return "Connection request error: Incorrect connection request credentials";
 }
 
 export async function udpConnectionRequest(

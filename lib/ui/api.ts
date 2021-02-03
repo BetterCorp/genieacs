@@ -32,6 +32,7 @@ import Authorizer from "../common/authorizer";
 import { ping } from "../ping";
 import * as url from "url";
 import { decodeTag } from "../common";
+import { stringify as yamlStringify } from "../common/yaml";
 
 const router = new Router();
 export default router;
@@ -106,19 +107,28 @@ router.get(`/devices/:id.csv`, async (ctx) => {
 
   for (const k of Object.keys(res[0]).sort()) {
     const p = res[0][k];
+    let value = "";
+    let type = "";
+    if (p.value) {
+      value = p.value[0];
+      type = p.value[1];
+      if (type === "xsd:dateTime" && typeof value === "number")
+        value = new Date(value).toJSON();
+    }
+
     const row = [
       k,
       p.object,
-      p.objectTimestamp,
+      new Date(p.objectTimestamp).toJSON(),
       p.writable,
-      p.writableTimestamp,
-      p.value != null ? `"${p.value[0].toString().replace(/"/g, '""')}"` : "",
-      p.value != null ? p.value[1] : "",
-      p.valueTimestamp,
+      new Date(p.writableTimestamp).toJSON(),
+      `"${value.toString().replace(/"/g, '""')}"`,
+      type,
+      new Date(p.valueTimestamp).toJSON(),
       p.notification,
-      p.notificationTimestamp,
+      new Date(p.notificationTimestamp).toJSON(),
       p.accessList ? p.accessList.join(", ") : "",
-      p.accessListTimestamp,
+      new Date(p.accessListTimestamp).toJSON(),
     ];
     ctx.body.write(row.map((r) => (r != null ? r : "")).join(",") + "\n");
   }
@@ -285,11 +295,23 @@ for (const [resource, flags] of Object.entries(resources)) {
 
                   return tags.join(", ");
                 }
+                if (e === exp) {
+                  const p = obj[e[1]];
+                  if (
+                    p &&
+                    p.value &&
+                    p.value[1] === "xsd:dateTime" &&
+                    typeof p.value[0] === "number"
+                  )
+                    return new Date(p.value[0]).toJSON();
+                }
+              } else if (resource === "faults") {
+                if (e[1] === "detail") return yamlStringify(obj["detail"]);
               }
             } else if (e[0] === "FUNC") {
               if (e[1] === "DATE_STRING") {
                 if (e[2] && !Array.isArray(e[2]))
-                  return new Date(e[2]).toISOString();
+                  return new Date(e[2]).toJSON();
               }
             }
           }
@@ -531,12 +553,20 @@ router.post("/devices/:id/tasks", async (ctx) => {
     }
   ) as number;
 
+  const socketTimeout: number = ctx.socket["timeout"];
+
+  // Disable socket timeout while waiting for postTasks()
+  if (socketTimeout) ctx.socket.setTimeout(0);
+
   const res = await apiFunctions.postTasks(
     ctx.params.id,
     ctx.request.body,
     onlineThreshold,
     device
   );
+
+  // Restore socket timeout
+  if (socketTimeout) ctx.socket.setTimeout(socketTimeout);
 
   log.tasks = res.tasks.map((t) => t._id).join(",");
 

@@ -196,17 +196,23 @@ async function writeResponse(
       sessionContext: sessionContext,
       message: "Connection dropped",
     });
+    await endSession(sessionContext);
   } else if (close) {
-    const isNew = await endSession(sessionContext);
-    if (isNew) {
-      logger.accessInfo({
-        sessionContext: sessionContext,
-        message: "New device registered",
-      });
-    }
+    session.clearProvisions(sessionContext);
+    await endSession(sessionContext);
   } else {
-    sessionContext.lastActivity = Date.now();
+    const now = Date.now();
+    sessionContext.lastActivity = now;
     currentSessions.set(connection, sessionContext);
+    if (now >= sessionContext.extendLock) {
+      sessionContext.extendLock = now + 10000;
+      await cache.acquireLock(
+        `cwmp_session_${sessionContext.deviceId}`,
+        sessionContext.timeout + 15000,
+        0,
+        sessionContext.sessionId
+      );
+    }
   }
 }
 
@@ -726,8 +732,19 @@ async function nextRpc(sessionContext: SessionContext): Promise<void> {
   return nextRpc(sessionContext);
 }
 
-async function endSession(sessionContext: SessionContext): Promise<boolean> {
+async function endSession(sessionContext: SessionContext): Promise<void> {
   let saveCache = sessionContext.cacheUntil != null;
+
+  if (sessionContext.provisions.length) {
+    const fault = {
+      code: "session_terminated",
+      message: "The TR-069 session was unsuccessfully terminated",
+      timestamp: sessionContext.timestamp,
+    };
+    recordFault(sessionContext, fault);
+    // No need to save retryNow
+    for (const f of Object.values(sessionContext.faults)) delete f.retryNow;
+  }
 
   const promises = [];
 
@@ -791,7 +808,16 @@ async function endSession(sessionContext: SessionContext): Promise<boolean> {
   }
 
   await Promise.all(promises);
-  return sessionContext.new;
+  await cache.releaseLock(
+    `cwmp_session_${sessionContext.deviceId}`,
+    sessionContext.sessionId
+  );
+  if (sessionContext.new) {
+    logger.accessInfo({
+      sessionContext: sessionContext,
+      message: "New device registered",
+    });
+  }
 }
 
 async function sendAcsRequest(
@@ -878,15 +904,21 @@ export function onConnection(socket: Socket): void {
     const now = Date.now();
 
     const lastActivity = sessionContext.lastActivity;
-    const timeoutMsg = logger.flatten({
+    const timeoutMsg = {
       sessionContext: sessionContext,
       message: "Session timeout",
       sessionTimestamp: sessionContext.timestamp,
-    });
+    };
 
     const timeout =
       sessionContext.lastActivity + sessionContext.timeout * 1000 - now;
-    if (timeout <= 0) return void logger.accessError(timeoutMsg);
+
+    if (timeout <= 0) {
+      logger.accessError(timeoutMsg);
+      // TODO it's possible that lock would have already been expired
+      await endSession(sessionContext);
+      return;
+    }
 
     setTimeout(async () => {
       const sessionContextString = await cache.get(
@@ -894,8 +926,10 @@ export function onConnection(socket: Socket): void {
       );
       if (!sessionContextString) return;
       const _sessionContext = await session.deserialize(sessionContextString);
-      if (_sessionContext.lastActivity === lastActivity)
+      if (_sessionContext.lastActivity === lastActivity) {
         logger.accessError(timeoutMsg);
+        await endSession(sessionContext);
+      }
     }, timeout + 1000).unref();
 
     if (sessionContext.state === 0) return;
@@ -1092,6 +1126,37 @@ async function processRequest(
       }
     }
 
+    try {
+      sessionContext.extendLock = sessionContext.timestamp + 10000;
+      await cache.acquireLock(
+        `cwmp_session_${sessionContext.deviceId}`,
+        sessionContext.timeout + 15000,
+        0,
+        sessionContext.sessionId
+      );
+    } catch (err) {
+      logger.accessError({
+        message: "CPE already in session",
+        sessionContext: sessionContext,
+      });
+
+      const _body = "CPE already in session";
+      sessionContext.httpResponse.setHeader(
+        "Content-Length",
+        Buffer.byteLength(_body)
+      );
+      sessionContext.httpResponse.writeHead(400, { Connection: "close" });
+      if (sessionContext.debug) {
+        debug.outgoingHttpResponse(
+          sessionContext.httpResponse,
+          sessionContext.deviceId,
+          _body
+        );
+      }
+      sessionContext.httpResponse.end(_body);
+      return;
+    }
+
     sessionContext.state = 1;
     sessionContext.authState = 2;
 
@@ -1120,6 +1185,7 @@ async function processRequest(
         sessionContext.authState = 1;
         return responseUnauthorized(sessionContext, false);
       } else {
+        await endSession(sessionContext);
         return responseUnauthorized(sessionContext, true);
       }
     }
@@ -1343,6 +1409,7 @@ async function listenerAsync(
         );
       }
       httpResponse.end(_body);
+      await endSession(sessionContext);
       return;
     }
     if (newConnection && sessionContext.authState !== 1)
@@ -1393,6 +1460,7 @@ async function listenerAsync(
         );
         debug.outgoingHttpResponse(httpResponse, sessionContext.deviceId, msg);
       }
+      await endSession(sessionContext);
     } else {
       const cacheSnapshot = await localCache.getCurrentSnapshot();
       const d = !!localCache.getConfig(
@@ -1449,6 +1517,7 @@ async function listenerAsync(
           error.message
         );
       }
+      await endSession(sessionContext);
     } else {
       const cacheSnapshot = await localCache.getCurrentSnapshot();
       const d = !!localCache.getConfig(
@@ -1501,8 +1570,10 @@ async function listenerAsync(
         return e;
       }
     );
-    if (d)
-      debug.outgoingHttpResponse(httpResponse, sessionContext.deviceId, _body);
+    if (d) {
+      debug.incomingHttpRequest(httpRequest, null, bodyStr);
+      debug.outgoingHttpResponse(httpResponse, null, _body);
+    }
     httpResponse.end(_body);
     return;
   }

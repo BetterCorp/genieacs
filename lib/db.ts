@@ -17,7 +17,7 @@
  * along with GenieACS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { MongoClient, ObjectID, Collection } from "mongodb";
+import { MongoClient, ObjectID, Collection, Db } from "mongodb";
 import { get } from "./config";
 import { encodeTag, escapeRegExp } from "./common";
 import { parse } from "./common/expression-parser";
@@ -45,12 +45,17 @@ export let tasksCollection: Collection,
   configCollection: Collection;
 
 let clientPromise: Promise<MongoClient>;
-export let client: MongoClient;
 
 function compareAccessLists(list1: string[], list2: string[]): boolean {
   if (list1.length !== list2.length) return false;
   for (const [i, v] of list1.entries()) if (v !== list2[i]) return false;
   return true;
+}
+
+const onConnectCallbacks: ((db: Db) => Promise<void>)[] = [];
+
+export function onConnect(callback: (db: Db) => Promise<void>): void {
+  onConnectCallbacks.push(callback);
 }
 
 export async function connect(): Promise<void> {
@@ -59,9 +64,12 @@ export async function connect(): Promise<void> {
     useUnifiedTopology: true,
   });
 
-  client = await clientPromise;
+  const client = await clientPromise;
   const db = client.db();
+  await Promise.all(onConnectCallbacks.map((c) => c(db)));
+}
 
+onConnect(async (db) => {
   tasksCollection = db.collection("tasks");
   await tasksCollection.createIndex({ device: 1, timestamp: 1 });
 
@@ -76,7 +84,7 @@ export async function connect(): Promise<void> {
   permissionsCollection = db.collection("permissions");
   usersCollection = db.collection("users");
   configCollection = db.collection("config");
-}
+});
 
 export async function disconnect(): Promise<void> {
   if (clientPromise) await (await clientPromise).close();
@@ -123,7 +131,12 @@ export async function fetchDevice(
   const device = await devicesCollection.findOne({ _id: id });
   if (!device) return null;
 
-  function storeParams(obj, path: string, pathLength: number, ts): void {
+  function storeParams(
+    obj,
+    path: string,
+    pathLength: number,
+    ts: number
+  ): void {
     if (obj["_timestamp"]) obj["_timestamp"] = +obj["_timestamp"];
     if (obj["_attributesTimestamp"])
       obj["_attributesTimestamp"] = +obj["_attributesTimestamp"];
@@ -154,18 +167,21 @@ export async function fetchDevice(
     if (obj["_accessList"] != null)
       attrs.accessList = [obj["_attributesTimestamp"] || 1, obj["_accessList"]];
 
-    res.push([Path.parse(path.slice(0, -1)), t, attrs]);
+    res.push([Path.parse(path), t, attrs]);
 
     for (const [k, v] of Object.entries(obj)) {
       if (!k.startsWith("_")) {
         obj["_object"] = true;
-        storeParams(v, path + k + ".", pathLength + 1, obj["_timestamp"]);
+        storeParams(v, `${path}.${k}`, pathLength + 1, obj["_timestamp"]);
       }
     }
 
-    if ((obj["_object"] || !pathLength) && obj["_timestamp"])
-      res.push([Path.parse(path + "*"), obj["_timestamp"]]);
+    if (obj["_object"] && obj["_timestamp"])
+      res.push([Path.parse(path + ".*"), obj["_timestamp"]]);
   }
+
+  const ts: number = device["_timestamp"] || 0;
+  if (ts) res.push([Path.parse("*"), ts]);
 
   for (const [k, v] of Object.entries(device)) {
     switch (k) {
@@ -294,10 +310,11 @@ export async function fetchDevice(
             },
           ]);
         }
+        break;
+      default:
+        if (!k.startsWith("_")) storeParams(v, k, 1, ts);
     }
   }
-
-  storeParams(device, "", 0, 0);
   return res;
 }
 

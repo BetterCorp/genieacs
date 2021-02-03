@@ -18,17 +18,18 @@
  */
 
 import * as url from "url";
-import * as mongodb from "mongodb";
+import { Collection, GridFSBucket, ObjectId } from "mongodb";
 import * as querystring from "querystring";
 import * as vm from "vm";
 import * as config from "./config";
-import * as db from "./db";
+import { onConnect } from "./db";
 import * as query from "./query";
 import * as apiFunctions from "./api-functions";
 import { IncomingMessage, ServerResponse } from "http";
 import * as cache from "./cache";
 import { version as VERSION } from "../package.json";
 import { ping } from "./ping";
+import * as logger from "./logger";
 
 const DEVICE_TASKS_REGEX = /^\/devices\/([a-zA-Z0-9\-_%]+)\/tasks\/?$/;
 const TASKS_REGEX = /^\/tasks\/([a-zA-Z0-9\-_%]+)(\/[a-zA-Z_]*)?$/;
@@ -42,6 +43,23 @@ const DELETE_DEVICE_REGEX = /^\/devices\/([a-zA-Z0-9\-_%]+)\/?$/;
 const PROVISIONS_REGEX = /^\/provisions\/([a-zA-Z0-9\-_%]+)\/?$/;
 const VIRTUAL_PARAMETERS_REGEX = /^\/virtual_parameters\/([a-zA-Z0-9\-_%]+)\/?$/;
 const FAULTS_REGEX = /^\/faults\/([a-zA-Z0-9\-_%:]+)\/?$/;
+
+const collections = {
+  tasks: null as Collection,
+  devices: null as Collection,
+  presets: null as Collection,
+  objects: null as Collection,
+  "fs.files": null as Collection,
+  provisions: null as Collection,
+  virtualParameters: null as Collection,
+  faults: null as Collection,
+};
+let filesBucket: GridFSBucket;
+
+onConnect(async (db) => {
+  for (const k of Object.keys(collections)) collections[k] = db.collection(k);
+  filesBucket = new GridFSBucket(db);
+});
 
 function throwError(err: Error, httpResponse?: ServerResponse): never {
   if (httpResponse) {
@@ -78,6 +96,14 @@ export function listener(
   request.addListener("end", () => {
     const body = getBody();
     const urlParts = url.parse(request.url, true);
+
+    logger.accessInfo(
+      Object.assign({}, urlParts.query, {
+        remoteAddress: request.connection.remoteAddress,
+        message: `${request.method} ${urlParts.pathname}`,
+      })
+    );
+
     if (PRESETS_REGEX.test(urlParts.pathname)) {
       const presetName = querystring.unescape(
         PRESETS_REGEX.exec(urlParts.pathname)[1]
@@ -85,7 +111,7 @@ export function listener(
       if (request.method === "PUT") {
         const preset = JSON.parse(body.toString());
         preset._id = presetName;
-        db.presetsCollection.replaceOne(
+        collections.presets.replaceOne(
           { _id: presetName },
           preset,
           { upsert: true },
@@ -106,7 +132,7 @@ export function listener(
           }
         );
       } else if (request.method === "DELETE") {
-        db.presetsCollection.deleteOne({ _id: presetName }, (err) => {
+        collections.presets.deleteOne({ _id: presetName }, (err) => {
           if (err) return void throwError(err, response);
 
           cache
@@ -132,7 +158,7 @@ export function listener(
       if (request.method === "PUT") {
         const object = JSON.parse(body.toString());
         object._id = objectName;
-        db.objectsCollection.replaceOne(
+        collections.objects.replaceOne(
           { _id: objectName },
           object,
           { upsert: true },
@@ -153,7 +179,7 @@ export function listener(
           }
         );
       } else if (request.method === "DELETE") {
-        db.objectsCollection.deleteOne({ _id: objectName }, (err) => {
+        collections.objects.deleteOne({ _id: objectName }, (err) => {
           if (err) return void throwError(err, response);
 
           cache
@@ -190,7 +216,7 @@ export function listener(
           return;
         }
 
-        db.provisionsCollection.replaceOne(
+        collections.provisions.replaceOne(
           { _id: provisionName },
           object,
           { upsert: true },
@@ -211,7 +237,7 @@ export function listener(
           }
         );
       } else if (request.method === "DELETE") {
-        db.provisionsCollection.deleteOne({ _id: provisionName }, (err) => {
+        collections.provisions.deleteOne({ _id: provisionName }, (err) => {
           if (err) return void throwError(err, response);
 
           cache
@@ -248,7 +274,7 @@ export function listener(
           return;
         }
 
-        db.virtualParametersCollection.replaceOne(
+        collections.virtualParameters.replaceOne(
           { _id: virtualParameterName },
           object,
           { upsert: true },
@@ -269,7 +295,7 @@ export function listener(
           }
         );
       } else if (request.method === "DELETE") {
-        db.virtualParametersCollection.deleteOne(
+        collections.virtualParameters.deleteOne(
           { _id: virtualParameterName },
           (err) => {
             if (err) return void throwError(err, response);
@@ -296,7 +322,7 @@ export function listener(
       const deviceId = querystring.unescape(r[1]);
       const tag = querystring.unescape(r[2]);
       if (request.method === "POST") {
-        db.devicesCollection.updateOne(
+        collections.devices.updateOne(
           { _id: deviceId },
           { $addToSet: { _tags: tag } },
           (err) => {
@@ -306,7 +332,7 @@ export function listener(
           }
         );
       } else if (request.method === "DELETE") {
-        db.devicesCollection.updateOne(
+        collections.devices.updateOne(
           { _id: deviceId },
           { $pull: { _tags: tag } },
           (err) => {
@@ -327,12 +353,12 @@ export function listener(
         );
         const deviceId = faultId.split(":", 1)[0];
         const channel = faultId.slice(deviceId.length + 1);
-        db.faultsCollection.deleteOne({ _id: faultId }, (err) => {
+        collections.faults.deleteOne({ _id: faultId }, (err) => {
           if (err) return void throwError(err, response);
 
           if (channel.startsWith("task_")) {
-            const objId = new mongodb.ObjectID(channel.slice(5));
-            return void db.tasksCollection.deleteOne({ _id: objId }, (err) => {
+            const objId = new ObjectId(channel.slice(5));
+            return void collections.tasks.deleteOne({ _id: objId }, (err) => {
               if (err) return void throwError(err, response);
 
               cache
@@ -375,78 +401,112 @@ export function listener(
           task.device = deviceId;
           apiFunctions
             .insertTasks(task)
-            .then(() => {
-              cache
-                .del(`${deviceId}_tasks_faults_operations`)
-                .then(() => {
-                  if (urlParts.query.connection_request != null) {
-                    apiFunctions
-                      .connectionRequest(deviceId)
-                      .then(() => {
-                        const taskTimeout =
-                          (urlParts.query.timeout &&
-                            parseInt(urlParts.query.timeout as string)) ||
-                          (config.get(
-                            "DEVICE_ONLINE_THRESHOLD",
-                            deviceId
-                          ) as number);
+            .then(async () => {
+              const lastInform = Date.now();
 
-                        apiFunctions
-                          .watchTask(deviceId, task._id, taskTimeout)
-                          .then((status) => {
-                            if (status === "timeout") {
-                              response.writeHead(
-                                202,
-                                "Task queued but not processed",
-                                {
-                                  "Content-Type": "application/json",
-                                }
-                              );
-                              response.end(JSON.stringify(task));
-                            } else if (status === "fault") {
-                              db.tasksCollection.findOne(
-                                { _id: task._id },
-                                (err, task2) => {
-                                  if (err)
-                                    return void throwError(err, response);
+              const socketTimeout: number = request.socket["timeout"];
 
-                                  response.writeHead(202, "Task faulted", {
-                                    "Content-Type": "application/json",
-                                  });
-                                  response.end(JSON.stringify(task2));
-                                }
-                              );
-                            } else {
-                              response.writeHead(200, {
-                                "Content-Type": "application/json",
-                              });
-                              response.end(JSON.stringify(task));
-                            }
-                          })
-                          .catch((err) => {
-                            setTimeout(() => {
-                              throwError(err, response);
-                            });
-                          });
-                      })
-                      .catch((err) => {
-                        response.writeHead(202, err.message, {
-                          "Content-Type": "application/json",
-                        });
-                        response.end(JSON.stringify(task));
-                      });
-                  } else {
-                    response.writeHead(202, {
-                      "Content-Type": "application/json",
-                    });
-                    response.end(JSON.stringify(task));
-                  }
-                })
-                .catch((err) => {
-                  setTimeout(() => {
-                    throwError(err, response);
-                  });
+              // Disable socket timeout while waiting for session
+              if (socketTimeout) request.socket.setTimeout(0);
+
+              const notInSession = await apiFunctions.awaitSessionEnd(
+                deviceId,
+                30000
+              );
+              await cache.del(`${deviceId}_tasks_faults_operations`);
+              if (urlParts.query.connection_request == null) {
+                if (socketTimeout) request.socket.setTimeout(socketTimeout);
+                response.writeHead(202, {
+                  "Content-Type": "application/json",
                 });
+                response.end(JSON.stringify(task));
+                return;
+              }
+
+              if (!notInSession) {
+                if (socketTimeout) request.socket.setTimeout(socketTimeout);
+                response.writeHead(202, "Task queued but not processed", {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(task));
+                return;
+              }
+
+              const status = await apiFunctions.connectionRequest(deviceId);
+
+              if (status) {
+                if (socketTimeout) request.socket.setTimeout(socketTimeout);
+                response.writeHead(202, status, {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(task));
+                return;
+              }
+
+              const onlineThreshold =
+                (urlParts.query.timeout &&
+                  parseInt(urlParts.query.timeout as string)) ||
+                (config.get("DEVICE_ONLINE_THRESHOLD", deviceId) as number);
+
+              const sessionStarted = await apiFunctions.awaitSessionStart(
+                deviceId,
+                lastInform,
+                onlineThreshold
+              );
+              if (!sessionStarted) {
+                if (socketTimeout) request.socket.setTimeout(socketTimeout);
+                response.writeHead(202, "Task queued but not processed", {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(task));
+                return;
+              }
+
+              const sessionEnded = await apiFunctions.awaitSessionEnd(
+                deviceId,
+                120000
+              );
+              if (!sessionEnded) {
+                if (socketTimeout) request.socket.setTimeout(socketTimeout);
+                response.writeHead(202, "Task queued but not processed", {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(task));
+                return;
+              }
+
+              const prom1 = collections.tasks.findOne(
+                { _id: task._id },
+                { projection: { _id: 1 } }
+              );
+              const prom2 = collections.faults.findOne(
+                { _id: `${deviceId}:task_${task._id}` },
+                {
+                  projection: { _id: 1 },
+                }
+              );
+
+              const [t, f] = await Promise.all([prom1, prom2]);
+
+              // Restore socket timeout
+              if (socketTimeout) request.socket.setTimeout(socketTimeout);
+
+              if (f) {
+                response.writeHead(202, "Task faulted", {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(t || task));
+              } else if (t) {
+                response.writeHead(202, "Task queued but not processed", {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(t));
+              } else {
+                response.writeHead(200, {
+                  "Content-Type": "application/json",
+                });
+                response.end(JSON.stringify(task));
+              }
             })
             .catch((err) => {
               setTimeout(() => {
@@ -479,8 +539,8 @@ export function listener(
       const action = r[2];
       if (!action || action === "/") {
         if (request.method === "DELETE") {
-          db.tasksCollection.findOne(
-            { _id: new mongodb.ObjectID(taskId) },
+          collections.tasks.findOne(
+            { _id: new ObjectId(taskId) },
             { projection: { device: 1 } },
             (err, task) => {
               if (err) return void throwError(err, response);
@@ -492,12 +552,12 @@ export function listener(
               }
 
               const deviceId = task.device;
-              db.tasksCollection.deleteOne(
-                { _id: new mongodb.ObjectID(taskId) },
+              collections.tasks.deleteOne(
+                { _id: new ObjectId(taskId) },
                 (err) => {
                   if (err) return void throwError(err, response);
 
-                  db.faultsCollection.deleteOne(
+                  collections.faults.deleteOne(
                     { _id: `${deviceId}:task_${taskId}` },
                     (err) => {
                       if (err) return void throwError(err, response);
@@ -525,14 +585,14 @@ export function listener(
         }
       } else if (action === "/retry") {
         if (request.method === "POST") {
-          db.tasksCollection.findOne(
-            { _id: new mongodb.ObjectID(taskId) },
+          collections.tasks.findOne(
+            { _id: new ObjectId(taskId) },
             { projection: { device: 1 } },
             (err, task) => {
               if (err) return void throwError(err, response);
 
               const deviceId = task.device;
-              db.faultsCollection.deleteOne(
+              collections.faults.deleteOne(
                 { _id: `${deviceId}:task_${taskId}` },
                 (err) => {
                   if (err) return void throwError(err, response);
@@ -571,9 +631,8 @@ export function listener(
           productClass: request.headers.productclass,
           version: request.headers.version,
         };
-        const bucket = new mongodb.GridFSBucket(db.client.db());
-        bucket.delete((filename as unknown) as mongodb.ObjectId, () => {
-          const uploadStream = bucket.openUploadStreamWithId(
+        filesBucket.delete((filename as unknown) as ObjectId, () => {
+          const uploadStream = filesBucket.openUploadStreamWithId(
             filename,
             filename,
             {
@@ -591,8 +650,7 @@ export function listener(
           });
         });
       } else if (request.method === "DELETE") {
-        const bucket = new mongodb.GridFSBucket(db.client.db());
-        bucket.delete((filename as unknown) as mongodb.ObjectId, (err) => {
+        filesBucket.delete((filename as unknown) as ObjectId, (err) => {
           if (err) {
             if (err.message.startsWith("FileNotFound")) {
               response.writeHead(404);
@@ -669,7 +727,7 @@ export function listener(
         return;
       }
 
-      const collection = db[`${collectionName}Collection`];
+      const collection = collections[collectionName];
       if (!collection) {
         response.writeHead(404);
         response.end("404 Not Found");
@@ -693,7 +751,7 @@ export function listener(
           break;
         case "tasks":
           q = query.sanitizeQueryTypes(q, {
-            _id: (v) => new mongodb.ObjectID(v as string),
+            _id: (v) => new ObjectId(v as string),
             timestamp: (v) => new Date(v as number),
             retries: Number,
           });
